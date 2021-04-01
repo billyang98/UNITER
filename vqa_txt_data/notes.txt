@@ -1,0 +1,11 @@
+Total number of questions in VQA (not including vqa_test.db): 1129238
+
+After removing all of vqa_words_not_in_bert: 917591
+
+Total test set: 211647
+
+Test 1 set (test set): 115585
+
+test 2 set (val set): 96062
+
+dev_val is the smallest set
