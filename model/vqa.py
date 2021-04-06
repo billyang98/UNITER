@@ -10,7 +10,7 @@ from torch import nn
 from torch.nn import functional as F
 from apex.normalization.fused_layer_norm import FusedLayerNorm as LayerNorm
 
-from .layer import GELU
+from .layer import GELU, BertOnlyMLMHead
 from .model import UniterPreTrainedModel, UniterModel
 
 
@@ -27,8 +27,12 @@ class UniterForVisualQuestionAnswering(UniterPreTrainedModel):
             nn.Linear(config.hidden_size*2, num_answer)
         )
         self.apply(self.init_weights)
+        # added MLM task stuff
+        self.cls = BertOnlyMLMHead(
+            config, self.uniter.embeddings.word_embeddings.weight)
 
-    def forward(self, batch, compute_loss=True):
+    def forward(self, batch, compute_loss=True, task='vqa'):
+        assert(task == 'vqa' or task =='mlm')
         batch = defaultdict(lambda: None, batch)
         input_ids = batch['input_ids']
         position_ids = batch['position_ids']
@@ -40,13 +44,36 @@ class UniterForVisualQuestionAnswering(UniterPreTrainedModel):
                                       img_feat, img_pos_feat,
                                       attn_masks, gather_index,
                                       output_all_encoded_layers=False)
-        pooled_output = self.uniter.pooler(sequence_output)
-        answer_scores = self.vqa_output(pooled_output)
+        if task == 'vqa':
+            pooled_output = self.uniter.pooler(sequence_output)
+            answer_scores = self.vqa_output(pooled_output)
 
-        if compute_loss:
-            targets = batch['targets']
-            vqa_loss = F.binary_cross_entropy_with_logits(
-                answer_scores, targets, reduction='none')
-            return vqa_loss
+            if compute_loss:
+                targets = batch['targets']
+                vqa_loss = F.binary_cross_entropy_with_logits(
+                    answer_scores, targets, reduction='none')
+                return vqa_loss
+            else:
+                return answer_scores
+        elif task == 'mlm':
+            txt_labels = batch['txt_labels']
+            # get only the text part
+            sequence_output = sequence_output[:, :input_ids.size(1), :]
+            # only compute masked tokens for better efficiency
+            masked_output = self._compute_masked_hidden(sequence_output,
+                                                        txt_labels != -1)
+            prediction_scores = self.cls(masked_output)
+
+            if compute_loss:
+                masked_lm_loss = F.cross_entropy(prediction_scores,
+                                                txt_labels[txt_labels != -1],
+                                                reduction='none')
+                return masked_lm_loss
         else:
-            return answer_scores
+            return prediction_scores
+
+    def _compute_masked_hidden(self, hidden, mask):
+        """ get only the masked region (don't compute unnecessary hiddens) """
+        mask = mask.unsqueeze(-1).expand_as(hidden)
+        hidden_masked = hidden[mask].contiguous().view(-1, hidden.size(-1))
+        return hidden_masked

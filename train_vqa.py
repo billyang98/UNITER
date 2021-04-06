@@ -24,7 +24,8 @@ from tqdm import tqdm
 from data import (TokenBucketSampler, PrefetchLoader,
                   TxtTokLmdb, ImageLmdbGroup, ConcatDatasetWithLens,
                   VqaDataset, VqaEvalDataset,
-                  vqa_collate, vqa_eval_collate)
+                  vqa_collate, vqa_eval_collate,
+                  MlmDataset, mlm_collate)
 from model.vqa import UniterForVisualQuestionAnswering
 from optim import AdamW, get_lr_sched
 
@@ -104,30 +105,45 @@ def main(opts):
 
     set_random_seed(opts.seed)
 
-    ans2label = json.load(open(f'{dirname(abspath(__file__))}'
-                               f'/utils/ans2label.json'))
-    label2ans = {label: ans for ans, label in ans2label.items()}
-
     # load DBs and image dirs
     all_img_dbs = ImageLmdbGroup(opts.conf_th, opts.max_bb, opts.min_bb,
-                                 opts.num_bb, opts.compressed_db)
+                                opts.num_bb, opts.compressed_db)
     # train
     LOGGER.info(f"Loading Train Dataset "
                 f"{opts.train_txt_dbs}, {opts.train_img_dbs}")
     train_datasets = []
-    for txt_path, img_path in zip(opts.train_txt_dbs, opts.train_img_dbs):
-        img_db = all_img_dbs[img_path]
-        txt_db = TxtTokLmdb(txt_path, opts.max_txt_len)
-        train_datasets.append(VqaDataset(len(ans2label), txt_db, img_db))
-    train_dataset = ConcatDatasetWithLens(train_datasets)
-    train_dataloader = build_dataloader(train_dataset, vqa_collate, True, opts)
-    # val
-    LOGGER.info(f"Loading Train Dataset {opts.val_txt_db}, {opts.val_img_db}")
-    val_img_db = all_img_dbs[opts.val_img_db]
-    val_txt_db = TxtTokLmdb(opts.val_txt_db, -1)
-    val_dataset = VqaEvalDataset(len(ans2label), val_txt_db, val_img_db)
-    val_dataloader = build_dataloader(val_dataset, vqa_eval_collate,
-                                      False, opts)
+    if opts.task == 'vqa':
+        LOGGER.info("Loading VQA Datasets")
+        ans2label = json.load(open(f'{dirname(abspath(__file__))}'
+                                f'/utils/ans2label.json'))
+        label2ans = {label: ans for ans, label in ans2label.items()}
+
+        for txt_path, img_path in zip(opts.train_txt_dbs, opts.train_img_dbs):
+            img_db = all_img_dbs[img_path]
+            txt_db = TxtTokLmdb(txt_path, opts.max_txt_len)
+            train_datasets.append(VqaDataset(len(ans2label), txt_db, img_db))
+        train_dataset = ConcatDatasetWithLens(train_datasets)
+        train_dataloader = build_dataloader(train_dataset, vqa_collate, True, opts)
+        # val
+        LOGGER.info(f"Loading Val Dataset {opts.val_txt_db}, {opts.val_img_db}")
+        val_img_db = all_img_dbs[opts.val_img_db]
+        val_txt_db = TxtTokLmdb(opts.val_txt_db, -1)
+        val_dataset = VqaEvalDataset(len(ans2label), val_txt_db, val_img_db)
+        val_dataloader = build_dataloader(val_dataset, vqa_eval_collate,
+                                        False, opts)
+    elif opts.task == 'mlm':
+        LOGGER.info("Loading MLM Dataset")
+        for txt_path, img_path in zip(opts.train_txt_dbs, opts.train_img_dbs):
+            img_db = all_img_dbs[img_path]
+            txt_db = TxtTokLmdb(txt_path, opts.max_txt_len)
+            train_datasets.append(MlmDataset(txt_db, img_db))
+        train_dataset = ConcatDatasetWithLens(train_datasets)
+        train_dataloader = build_dataloader(train_dataset, mlm_collate, True, opts)
+        LOGGER.info(f"Loading Val Dataset {opts.val_txt_db}, {opts.val_img_db}")
+        val_img_db = all_img_dbs[opts.val_img_db]
+        val_txt_db = TxtTokLmdb(opts.val_txt_db, -1)
+        val_dataset = MlmDataset(val_txt_db, val_img_db)
+        val_dataloader = build_dataloader(val_dataset, mlm_collate, False, opts)
 
     # Prepare model
     if opts.checkpoint:
@@ -184,7 +200,7 @@ def main(opts):
         for step, batch in enumerate(train_dataloader):
             n_examples += batch['input_ids'].size(0)
 
-            loss = model(batch, compute_loss=True)
+            loss = model(batch, compute_loss=True, task=opts.task)
             loss = loss.mean() * batch['targets'].size(1)  # instance-leval bce
             delay_unscale = (step+1) % opts.gradient_accumulation_steps != 0
             with amp.scale_loss(loss, optimizer, delay_unscale=delay_unscale
@@ -255,11 +271,14 @@ def main(opts):
         n_epoch += 1
         LOGGER.info(f"finished {n_epoch} epochs")
     if opts.num_train_steps % opts.valid_steps != 0:
-        val_log, results = validate(model, val_dataloader, label2ans)
-        with open(f'{opts.output_dir}/results/'
-                  f'results_{global_step}_'
-                  f'rank{rank}.json', 'w') as f:
-            json.dump(results, f)
+        if opts.task == 'vqa':
+            val_log, results = validate(model, val_dataloader, label2ans)
+            with open(f'{opts.output_dir}/results/'
+                    f'results_{global_step}_'
+                    f'rank{rank}.json', 'w') as f:
+                json.dump(results, f)
+        elif opts.task == 'mlm':
+            val_log = validate_mlm(model, val_dataloader)
         TB_LOGGER.log_scaler_dict(val_log)
         model_saver.save(model, global_step)
 
@@ -300,6 +319,34 @@ def validate(model, val_loader, label2ans):
                 f"score: {val_acc*100:.2f}")
     return val_log, results
 
+
+@torch.no_grad()
+def validate_mlm(model, val_loader):
+    LOGGER.info("start running MLM validation...")
+    val_loss = 0
+    n_correct = 0
+    n_word = 0
+    st = time()
+    for i, batch in enumerate(val_loader):
+        scores = model(batch, task='mlm', compute_loss=False)
+        labels = batch['txt_labels']
+        labels = labels[labels != -1]
+        loss = F.cross_entropy(scores, labels, reduction='sum')
+        val_loss += loss.item()
+        n_correct += (scores.max(dim=-1)[1] == labels).sum().item()
+        n_word += labels.numel()
+    val_loss = sum(all_gather_list(val_loss))
+    n_correct = sum(all_gather_list(n_correct))
+    n_word = sum(all_gather_list(n_word))
+    tot_time = time()-st
+    val_loss /= n_word
+    acc = n_correct / n_word
+    val_log = {'loss': val_loss,
+               'acc': acc,
+               'tok_per_s': n_word/tot_time}
+    LOGGER.info(f"validation finished in {int(tot_time)} seconds, "
+                f"acc: {acc*100:.2f}")
+    return val_log
 
 def compute_score_with_logits(logits, labels):
     logits = torch.max(logits, 1)[1]  # argmax
@@ -385,6 +432,9 @@ if __name__ == "__main__":
 
     # can use config files
     parser.add_argument('--config', help='JSON config files')
+
+    parser.add_argument('--task', type=str, default="vqa",
+                                help='Which task to finetune')
 
     args = parse_with_config(parser)
 
