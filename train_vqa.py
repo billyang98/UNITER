@@ -170,6 +170,11 @@ def main(opts):
 
     # Prepare optimizer
     optimizer = build_optimizer(model, opts)
+    if current_step > 0 and opts.checkpoint_dir:
+        train_state_file = join(opts.checkpoint_dir, 'train_state_{}.pt'.format(current_step))
+        if exists(train_state_file):
+            train_state = torch.load(train_state_file)
+            optimizer.load_state_dict(train_state['optimizer'])
     model, optimizer = amp.initialize(model, optimizer,
                                       enabled=opts.fp16, opt_level='O2')
     global_step = current_step
@@ -278,7 +283,7 @@ def main(opts):
                     val_log = {f'{task}_{k}': v for k, v in val_log.items()}
                     TB_LOGGER.log_scaler_dict(
                         {f'valid_{task}/{k}': v for k, v in val_log.items()})
-                    model_saver.save(model, global_step)
+                    model_saver.save(model, global_step, optimizer=optimizer)
             if global_step >= opts.num_train_steps:
                 break
         if global_step >= opts.num_train_steps:
