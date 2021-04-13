@@ -111,12 +111,12 @@ def main(opts):
     # train
     LOGGER.info(f"Loading Train Dataset "
                 f"{opts.train_txt_dbs}, {opts.train_img_dbs}")
+    ans2label = json.load(open(f'{dirname(abspath(__file__))}'
+			f'/utils/ans2label.json'))
+    label2ans = {label: ans for ans, label in ans2label.items()}
     train_datasets = []
     if opts.task == 'vqa':
         LOGGER.info("Loading VQA Datasets")
-        ans2label = json.load(open(f'{dirname(abspath(__file__))}'
-                                f'/utils/ans2label.json'))
-        label2ans = {label: ans for ans, label in ans2label.items()}
 
         for txt_path, img_path in zip(opts.train_txt_dbs, opts.train_img_dbs):
             img_db = all_img_dbs[img_path]
@@ -175,7 +175,8 @@ def main(opts):
         model_saver = ModelSaver(join(opts.output_dir, 'ckpt'))
         json.dump(ans2label,
                   open(join(opts.output_dir, 'ckpt', 'ans2label.json'), 'w'))
-        os.makedirs(join(opts.output_dir, 'results'))  # store VQA predictions
+        if not os.path.exists(join(opts.output_dir, 'results')):
+            os.makedirs(join(opts.output_dir, 'results'))  # store VQA predictions
         add_log_to_file(join(opts.output_dir, 'log', 'log.txt'))
     else:
         LOGGER.disabled = True
@@ -201,7 +202,10 @@ def main(opts):
             n_examples += batch['input_ids'].size(0)
 
             loss = model(batch, compute_loss=True, task=opts.task)
-            loss = loss.mean() * batch['targets'].size(1)  # instance-leval bce
+            if opts.task == 'vqa':
+                loss = loss.mean() * batch['targets'].size(1)  # instance-leval bce
+            if opts.task == 'mlm':
+                loss = loss.mean() 
             delay_unscale = (step+1) % opts.gradient_accumulation_steps != 0
             with amp.scale_loss(loss, optimizer, delay_unscale=delay_unscale
                                 ) as scaled_loss:
@@ -438,9 +442,9 @@ if __name__ == "__main__":
 
     args = parse_with_config(parser)
 
-    if exists(args.output_dir) and os.listdir(args.output_dir):
-        raise ValueError("Output directory ({}) already exists and is not "
-                         "empty.".format(args.output_dir))
+    #if exists(args.output_dir) and os.listdir(args.output_dir):
+    #    raise ValueError("Output directory ({}) already exists and is not "
+    #                     "empty.".format(args.output_dir))
 
     # options safe guard
     if args.conf_th == -1:
