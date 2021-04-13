@@ -7,6 +7,7 @@ VQA dataset
 import torch
 from torch.nn.utils.rnn import pad_sequence
 from toolz.sandbox import unzip
+import random
 
 from .data import DetectFeatTxtTokDataset, pad_tensors, get_gather_index
 
@@ -56,7 +57,7 @@ def random_word(tokens, vocab_range, mask):
         output_label[0] = tokens[0]
         tokens[0] = mask
 
-    return tokens, output_labe
+    return tokens, output_label
 
 
 class VqaDataset(DetectFeatTxtTokDataset):

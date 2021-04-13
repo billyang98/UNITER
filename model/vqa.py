@@ -70,8 +70,8 @@ class UniterForVisualQuestionAnswering(UniterPreTrainedModel):
                                                 txt_labels[txt_labels != -1],
                                                 reduction='none')
                 return masked_lm_loss
-        else:
-            return prediction_scores
+            else:
+                return prediction_scores
 
     def _compute_masked_hidden(self, hidden, mask):
         """ get only the masked region (don't compute unnecessary hiddens) """
