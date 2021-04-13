@@ -138,6 +138,9 @@ class VqaEvalDataset(VqaDataset):
         input_ids = example['input_ids']
         input_ids = self.txt_db.combine_inputs(input_ids)
 
+        # masked text input
+        masked_input_ids, masked_txt_labels = self.create_mlm_io(example['input_ids'])
+
         if 'target' in example:
             target = _get_vqa_target(example, self.num_answers)
         else:
@@ -145,16 +148,29 @@ class VqaEvalDataset(VqaDataset):
 
         attn_masks = torch.ones(len(input_ids) + num_bb, dtype=torch.long)
 
-        return qid, input_ids, img_feat, img_pos_feat, attn_masks, target
+        return qid, input_ids, img_feat, img_pos_feat, attn_masks, target, masked_input_ids, masked_txt_labels
 
+    def create_mlm_io(self, input_ids):
+        input_ids, txt_labels = random_word(input_ids,
+                                            self.txt_db.v_range,
+                                            self.txt_db.mask)
+        input_ids = torch.tensor([self.txt_db.cls_]
+                                 + input_ids
+                                 + [self.txt_db.sep])
+        txt_labels = torch.tensor([-1] + txt_labels + [-1])
+        return input_ids, txt_labels
 
 def vqa_eval_collate(inputs):
-    (qids, input_ids, img_feats, img_pos_feats, attn_masks, targets
-     ) = map(list, unzip(inputs))
+    (qids, input_ids, img_feats, img_pos_feats, attn_masks, targets,
+     masked_input_ids, masked_txt_labels) = map(list, unzip(inputs))
 
     txt_lens = [i.size(0) for i in input_ids]
 
     input_ids = pad_sequence(input_ids, batch_first=True, padding_value=0)
+
+    masked_input_ids = pad_sequence(masked_input_ids, batch_first=True, padding_value=0)
+    masked_txt_labels = pad_sequence(masked_txt_labels, batch_first=True, padding_value=-1)
+
     position_ids = torch.arange(0, input_ids.size(1), dtype=torch.long
                                 ).unsqueeze(0)
     attn_masks = pad_sequence(attn_masks, batch_first=True, padding_value=0)
@@ -178,5 +194,7 @@ def vqa_eval_collate(inputs):
              'img_pos_feat': img_pos_feat,
              'attn_masks': attn_masks,
              'gather_index': gather_index,
-             'targets': targets}
+             'targets': targets,
+             'masked_input_ids': masked_input_ids,
+             'masked_txt_labels': masked_txt_labels}
     return batch
