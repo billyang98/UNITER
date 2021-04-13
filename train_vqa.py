@@ -115,9 +115,8 @@ def main(opts):
 			f'/utils/ans2label.json'))
     label2ans = {label: ans for ans, label in ans2label.items()}
     train_datasets = []
-    if opts.task == 'vqa':
+    if opts.task == 'vqa' or opts.task == 'joint':
         LOGGER.info("Loading VQA Datasets")
-
         for txt_path, img_path in zip(opts.train_txt_dbs, opts.train_img_dbs):
             img_db = all_img_dbs[img_path]
             txt_db = TxtTokLmdb(txt_path, opts.max_txt_len)
@@ -200,12 +199,13 @@ def main(opts):
     while True:
         for step, batch in enumerate(train_dataloader):
             n_examples += batch['input_ids'].size(0)
-
-            loss = model(batch, compute_loss=True, task=opts.task)
-            if opts.task == 'vqa':
+            # do one task for opts.gradient_accumulation_steps then switch
+            task = 'vqa' if step // opts.gradient_accumulation_steps % 2 == 0 else 'mlm'
+            loss = model(batch, compute_loss=True, task=task)
+            if task == 'vqa':
                 loss = loss.mean() * batch['targets'].size(1)  # instance-leval bce
-            if opts.task == 'mlm':
-                loss = loss.mean() 
+            if task == 'mlm':
+                loss = loss.mean()
             delay_unscale = (step+1) % opts.gradient_accumulation_steps != 0
             with amp.scale_loss(loss, optimizer, delay_unscale=delay_unscale
                                 ) as scaled_loss:
@@ -267,6 +267,10 @@ def main(opts):
                               f'rank{rank}.json', 'w') as f:
                         json.dump(results, f)
                     TB_LOGGER.log_scaler_dict(val_log)
+                    val_log = validate_mlm(model, val_dataloader)
+                    val_log = {f'{task}_{k}': v for k, v in val_log.items()}
+                    TB_LOGGER.log_scaler_dict(
+                        {f'valid_{task}/{k}': v for k, v in val_log.items()})
                     model_saver.save(model, global_step)
             if global_step >= opts.num_train_steps:
                 break
@@ -275,15 +279,16 @@ def main(opts):
         n_epoch += 1
         LOGGER.info(f"finished {n_epoch} epochs")
     if opts.num_train_steps % opts.valid_steps != 0:
-        if opts.task == 'vqa':
-            val_log, results = validate(model, val_dataloader, label2ans)
-            with open(f'{opts.output_dir}/results/'
-                    f'results_{global_step}_'
-                    f'rank{rank}.json', 'w') as f:
-                json.dump(results, f)
-        elif opts.task == 'mlm':
-            val_log = validate_mlm(model, val_dataloader)
+        val_log, results = validate(model, val_dataloader, label2ans)
+        with open(f'{opts.output_dir}/results/'
+                f'results_{global_step}_'
+                f'rank{rank}.json', 'w') as f:
+            json.dump(results, f)
         TB_LOGGER.log_scaler_dict(val_log)
+        val_log = validate_mlm(model, val_dataloader)
+        val_log = {f'{task}_{k}': v for k, v in val_log.items()}
+        TB_LOGGER.log_scaler_dict(
+            {f'valid_{task}/{k}': v for k, v in val_log.items()})
         model_saver.save(model, global_step)
 
 
@@ -297,7 +302,7 @@ def validate(model, val_loader, label2ans):
     st = time()
     results = {}
     for i, batch in enumerate(val_loader):
-        scores = model(batch, compute_loss=False)
+        scores = model(batch, compute_loss=False, task='vqa')
         targets = batch['targets']
         loss = F.binary_cross_entropy_with_logits(
             scores, targets, reduction='sum')
@@ -333,7 +338,7 @@ def validate_mlm(model, val_loader):
     st = time()
     for i, batch in enumerate(val_loader):
         scores = model(batch, task='mlm', compute_loss=False)
-        labels = batch['txt_labels']
+        labels = batch['masked_txt_labels']
         labels = labels[labels != -1]
         loss = F.cross_entropy(scores, labels, reduction='sum')
         val_loss += loss.item()

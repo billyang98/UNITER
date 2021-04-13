@@ -56,7 +56,8 @@ class UniterForVisualQuestionAnswering(UniterPreTrainedModel):
             else:
                 return answer_scores
         elif task == 'mlm':
-            txt_labels = batch['txt_labels']
+            txt_labels = batch['masked_txt_labels']
+            input_ids = batch['masked_input_ids']
             # get only the text part
             sequence_output = sequence_output[:, :input_ids.size(1), :]
             # only compute masked tokens for better efficiency
