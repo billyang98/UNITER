@@ -63,7 +63,7 @@ class ModelSaver(object):
         self.prefix = prefix
         self.suffix = suffix
 
-    def save(self, model, step, optimizer=None):
+    def save(self, model, step, optimizer=None, amp=None):
         output_model_file = join(self.output_dir,
                                  f"{self.prefix}_{step}.{self.suffix}")
         state_dict = {k: v.cpu() if isinstance(v, torch.Tensor) else v
@@ -71,6 +71,8 @@ class ModelSaver(object):
         torch.save(state_dict, output_model_file)
         if optimizer is not None:
             dump = {'step': step, 'optimizer': optimizer.state_dict()}
+            if amp is not None:
+                dump['amp'] = amp.state_dict()
             if hasattr(optimizer, '_amp_stash'):
                 pass  # TODO fp16 optimizer
             torch.save(dump, f'{self.output_dir}/train_state_{step}.pt')
