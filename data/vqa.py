@@ -94,13 +94,15 @@ class VqaDataset(DetectFeatTxtTokDataset):
 
 
 def vqa_collate(inputs):
-    (input_ids, img_feats, img_pos_feats, attn_masks, targets
-     ) = map(list, unzip(inputs))
+    (input_ids, img_feats, img_pos_feats, attn_masks, targets,
+     masked_input_ids, masked_txt_labels) = map(list, unzip(inputs))
 
     txt_lens = [i.size(0) for i in input_ids]
     input_ids = pad_sequence(input_ids, batch_first=True, padding_value=0)
     position_ids = torch.arange(0, input_ids.size(1), dtype=torch.long
                                 ).unsqueeze(0)
+    masked_input_ids = pad_sequence(masked_input_ids, batch_first=True, padding_value=0)
+    masked_txt_labels = pad_sequence(masked_txt_labels, batch_first=True, padding_value=-1)
 
     attn_masks = pad_sequence(attn_masks, batch_first=True, padding_value=0)
     targets = torch.stack(targets, dim=0)
@@ -119,7 +121,9 @@ def vqa_collate(inputs):
              'img_pos_feat': img_pos_feat,
              'attn_masks': attn_masks,
              'gather_index': gather_index,
-             'targets': targets}
+             'targets': targets,
+             'masked_input_ids': masked_input_ids,
+             'masked_txt_labels': masked_txt_labels}
     return batch
 
 
