@@ -12,7 +12,7 @@ bash scripts/set_up_singularity.sh <USERNAME>
 
 Command to run the image. Input your own paths to the github and where the dataset is saved. We are expecting the dataset directory where the contents are "finetune, img_db, pretrained, txt_db"
 ```
-singularity shell -B <PATH TO UNITER GITHUB>:/uniter,<PATH TO THE VQA DATASET>:/vqa_dataset --nv -w uniter_image
+singularity shell -B /u/billyang/classwork/21s/gnlp/project/UNITER:/uniter,/scratch/cluster/billyang/vqa_dataset:/vqa_dataset --nv -w uniter_image
 ```
 
 
@@ -25,4 +25,19 @@ Using the same "output_dir" as in your train_<...>.json file:
 
 ```
 bash scripts/set_up_vqa_training.sh <USERNAME> <OUTPUT_DIR>
+```
+
+How to run the training in a single command
+
+```
+/lusr/opt/singularity-3.2.1/bin/singularity exec -B /u/billyang/classwork/21s/gnlp/project/UNITER:/uniter,/scratch/cluster/billyang/vqa_dataset:/vqa_dataset --nv -w /scratch/cluster/billyang/uniter_image bash run_train_singularity.sh train-vqa-mlm-test.json
+```
+
+run with condorizer with -n test dry run
+```
+python scripts/condorizer.py -j TESTING_JOB  -o /scratch/cluster/billyang/ -g  -n singularity exec -B /u/billyang/classwork/21s/gnlp/project/UNITER:/uniter,/scratch/cluster/billyang/vqa_dataset:/vqa_dataset --nv -w /scratch/cluster/billyang/uniter_image bash run_train_singularity.sh train-vqa-mlm-test.jso
+```
+no -n , not dry run, real submit
+```
+python scripts/condorizer.py -j TESTING_JOB  -o /scratch/cluster/billyang/condor_output/uniter_vqa -g  singularity exec -B /u/billyang/classwork/21s/gnlp/project/UNITER:/uniter,/scratch/cluster/billyang/vqa_dataset:/vqa_dataset --nv -w /scratch/cluster/billyang/uniter_image bash run_train_singularity.sh train-vqa-mlm-test.jso
 ```

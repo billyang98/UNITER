@@ -39,6 +39,14 @@ Command to run the image. Input your own paths to the github and where the datas
 singularity shell -B <PATH TO UNITER GITHUB>:/uniter,<PATH TO THE VQA DATASET>:/vqa_dataset --nv -w uniter_image
 ```
 
+How to run training in a single commad
+```
+/lusr/opt/singularity-3.2.1/bin/singularity exec -B <PATH TO UNITER>:/uniter,<PATH_TO_DATASET>:/vqa_dataset --nv -w <PATH TO UNITER IMAGE> bash run_train_singularity.sh <TRAINING CONFIG JSON>
+```
+Submit Condor job with above command
+```
+python scripts/condorizer.py -j <JOB NAME>  -o <OUTPUT DIR FOR JOB> -g /lusr/opt/singularity-3.2.1/bin/singularity exec -B <PATH TO UNITER>:/uniter,<PATH_TO_DATASET>:/vqa_dataset --nv -w <PATH TO UNITER IMAGE> bash run_train_singularity.sh <TRAINING CONFIG JSON>
+```
 
 
 ### Set up training for VQA
