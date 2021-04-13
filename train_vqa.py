@@ -177,6 +177,7 @@ def main(opts):
         save_training_meta(opts)
         TB_LOGGER.create(join(opts.output_dir, 'log'))
         pbar = tqdm(total=opts.num_train_steps)
+        pbar.update(global_step)
         model_saver = ModelSaver(join(opts.output_dir, 'ckpt'))
         json.dump(ans2label,
                   open(join(opts.output_dir, 'ckpt', 'ans2label.json'), 'w'))
@@ -320,6 +321,9 @@ def validate(model, val_loader, label2ans):
         for qid, answer in zip(batch['qids'], answers):
             results[qid] = answer
         n_ex += len(batch['qids'])
+       	# TODO: remove grossness when actual training don't commit this
+       	#if i > 4:
+       	#    break
     val_loss = sum(all_gather_list(val_loss))
     tot_score = sum(all_gather_list(tot_score))
     n_ex = sum(all_gather_list(n_ex))
@@ -350,6 +354,9 @@ def validate_mlm(model, val_loader):
         val_loss += loss.item()
         n_correct += (scores.max(dim=-1)[1] == labels).sum().item()
         n_word += labels.numel()
+       	# TODO: remove grossness when actual training don't commit this
+       	#if i > 4:
+       	#    break
     val_loss = sum(all_gather_list(val_loss))
     n_correct = sum(all_gather_list(n_correct))
     n_word = sum(all_gather_list(n_word))

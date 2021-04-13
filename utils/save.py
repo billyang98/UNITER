@@ -22,6 +22,9 @@ def save_training_meta(args):
         os.makedirs(join(args.output_dir, 'log'))
         os.makedirs(join(args.output_dir, 'ckpt'))
 
+    if not exists(join(args.output_dir, 'log')):
+        os.makedirs(join(args.output_dir, 'log'))
+
     with open(join(args.output_dir, 'log', 'hps.json'), 'w') as writer:
         json.dump(vars(args), writer, indent=4)
     model_config = json.load(open(args.model_config))
