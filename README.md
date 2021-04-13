@@ -2,7 +2,7 @@
 This is the official repository of [UNITER](https://arxiv.org/abs/1909.11740) (ECCV 2020).
 This repository currently supports finetuning UNITER on
 [NLVR2](http://lil.nlp.cornell.edu/nlvr/), [VQA](https://visualqa.org/), [VCR](https://visualcommonsense.com/),
-[SNLI-VE](https://github.com/necla-ml/SNLI-VE), 
+[SNLI-VE](https://github.com/necla-ml/SNLI-VE),
 Image-Text Retrieval for [COCO](https://cocodataset.org/#home) and
 [Flickr30k](http://shannon.cs.illinois.edu/DenotationGraph/), and
 [Referring Expression Comprehensions](https://github.com/lichengunc/refer) (RefCOCO, RefCOCO+, and RefCOCO-g).
@@ -19,10 +19,43 @@ and [Nvidia](https://github.com/NVIDIA/DeepLearningExamples/tree/master/PyTorch)
 The image features are extracted using [BUTD](https://github.com/peteanderson80/bottom-up-attention).
 
 
+## Condor set up for training
+
+### Commands for singularity (docker) setup
+
+
+Command to first download the image
+
+Should use scripts/set_up_singularity.sh instead
+```
+TMPDIR=/scratch/cluster/billyang/bigtmp SINGULARITY_CACHEDIR=/scratch/cluster/billyang/singularity_cache singularity build -s uniter_image docker://chenrocks/uniter
+```
+```
+bash scripts/set_up_singularity.sh <USERNAME>
+```
+
+Command to run the image. Input your own paths to the github and where the dataset is saved. We are expecting the dataset directory where the contents are "finetune, img_db, pretrained, txt_db"
+```
+singularity shell -B <PATH TO UNITER GITHUB>:/uniter,<PATH TO THE VQA DATASET>:/vqa_dataset --nv -w uniter_image
+```
+
+
+
+### Set up training for VQA
+Before running train vqa, we need to move the checkpoint to the correct place to start training.
+
+The training script expects a model at this location and also saves subsequent models to this directory. Thus it is easy to continue training with the same training json file.
+
+Using the same "output_dir" as in your train_<...>.json file:
+
+```
+bash scripts/set_up_vqa_training.sh <USERNAME> <OUTPUT_DIR>
+```
+
 ## Requirements
 We provide Docker image for easier reproduction. Please install the following:
-  - [nvidia driver](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#package-manager-installation) (418+), 
-  - [Docker](https://docs.docker.com/install/linux/docker-ce/ubuntu/) (19.03+), 
+  - [nvidia driver](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#package-manager-installation) (418+),
+  - [Docker](https://docs.docker.com/install/linux/docker-ce/ubuntu/) (19.03+),
   - [nvidia-container-toolkit](https://github.com/NVIDIA/nvidia-docker#quickstart).
 
 Our scripts require the user to have the [docker group membership](https://docs.docker.com/install/linux/linux-postinstall/)
@@ -73,7 +106,7 @@ We use NLVR2 as an end-to-end example for using this code base.
         $PATH_TO_STORAGE/finetune $PATH_TO_STORAGE/pretrained
     ```
     The launch script respects $CUDA_VISIBLE_DEVICES environment variable.
-    Note that the source code is mounted into the container under `/src` instead 
+    Note that the source code is mounted into the container under `/src` instead
     of built into the image so that user modification will be reflected without
     re-building the image. (Data folders are mounted into the container separately
     for flexibility on folder structures.)
