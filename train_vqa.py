@@ -144,9 +144,15 @@ def main(opts):
         val_dataset = MlmDataset(val_txt_db, val_img_db)
         val_dataloader = build_dataloader(val_dataset, mlm_collate, False, opts)
 
+    current_step = 0
     # Prepare model
-    if opts.checkpoint:
-        checkpoint = torch.load(opts.checkpoint)
+    if opts.checkpoint_dir:
+        checkpoints = os.listdir(opts.checkpoint_dir)
+        checkpoints = list(filter(lambda x: x.startswith('model_step'), checkpoints))
+        steps = [int((s[len('model_step_'):])[:-len('.pt')]) for s in checkpoints]
+        current_step = max(steps)
+        checkpoint_file = 'model_step_{}.pt'.format(current_step)
+        checkpoint = torch.load(join(opts.checkpoint_dir, checkpoint_file))
     else:
         checkpoint = {}
 
@@ -166,7 +172,7 @@ def main(opts):
     optimizer = build_optimizer(model, opts)
     model, optimizer = amp.initialize(model, optimizer,
                                       enabled=opts.fp16, opt_level='O2')
-    global_step = 0
+    global_step = current_step
     if rank == 0:
         save_training_meta(opts)
         TB_LOGGER.create(join(opts.output_dir, 'log'))

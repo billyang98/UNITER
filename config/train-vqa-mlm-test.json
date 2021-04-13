@@ -5,7 +5,7 @@
     "val_img_db": "/vqa_dataset/img_db/coco_val2014",
     "output_dir": "/vqa-mlm-testing",
     "model_config": "config/uniter-base.json",
-    "checkpoint": "/vqa_dataset/pretrained/uniter-base.pt",
+    "checkpoint_dir": "/vqa-mlm-testing/ckpt",
     "max_txt_len": 4,
     "conf_th": 0.2,
     "max_bb": 100,
