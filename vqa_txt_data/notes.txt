@@ -21,3 +21,12 @@ Train questions 291722 images 63834
 Val questions 32730 images 7215
 Test questions 593139 images 96769
 OOV Test questions 211647 images 98818
+
+
+UNITER_VQA_EVAL_OOV_NORMAL eval-vqa-oov-test-normal.json
+test on the oov test set as is with normal tokenization
+ 0.6149664311399827
+
+eval-vqa-test-normal.json
+in vocab test set as is
+0.6543317853093756
