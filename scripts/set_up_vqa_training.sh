@@ -3,6 +3,7 @@ OUTPUT_DIR=$2
 DATASET_DIR=$3
 
 cp scripts/run_train_singularity.sh /scratch/cluster/$USERNAME/uniter_image/
+cp scripts/run_eval_singularity.sh /scratch/cluster/$USERNAME/uniter_image/
 
 cd /scratch/cluster/$USERNAME/uniter_image
 
