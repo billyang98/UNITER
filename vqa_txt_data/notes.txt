@@ -9,3 +9,15 @@ Test 1 set (test set): 115585
 test 2 set (val set): 96062
 
 dev_val is the smallest set
+
+txt_db_entry 'input_ids' is the token length of the questions, which is used to id2len.json
+
+use 'image_fname' for txt2img.json
+
+read db, can write directly, no decoding with correct key values (encoded)
+
+
+Train questions 291722 images 63834
+Val questions 32730 images 7215
+Test questions 593139 images 96769
+OOV Test questions 211647 images 98818
