@@ -57,7 +57,7 @@ The training script expects a model at this location and also saves subsequent m
 Using the same "output_dir" as in your train_<...>.json file:
 
 ```
-bash scripts/set_up_vqa_training.sh <USERNAME> <OUTPUT_DIR>
+bash scripts/set_up_vqa_training.sh <USERNAME> <OUTPUT_DIR> <PATH TO VQA DATASET>
 ```
 
 ## Requirements
