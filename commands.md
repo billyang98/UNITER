@@ -35,9 +35,9 @@ How to run the training in a single command
 
 run with condorizer with -n test dry run
 ```
-python scripts/condorizer.py -j TESTING_JOB  -o /scratch/cluster/billyang/ -g  -n singularity exec -B /u/billyang/classwork/21s/gnlp/project/UNITER:/uniter,/scratch/cluster/billyang/vqa_dataset:/vqa_dataset --nv -w /scratch/cluster/billyang/uniter_image bash run_train_singularity.sh train-vqa-mlm-test.jso
+python scripts/condorizer.py -j UNITER_VQA_OOV_1  -o /scratch/cluster/billyang/condor_output -g  -n /lusr/opt/singularity-3.2.1/bin/singularity exec -B /u/billyang/classwork/21s/gnlp/project/UNITER:/uniter,/scratch/cluster/billyang/vqa_dataset:/vqa_dataset --nv -w /scratch/cluster/billyang/uniter_image bash run_train_singularity.sh train_vqa_joint.json
 ```
 no -n , not dry run, real submit
 ```
-python scripts/condorizer.py -j TESTING_JOB  -o /scratch/cluster/billyang/condor_output/uniter_vqa -g  singularity exec -B /u/billyang/classwork/21s/gnlp/project/UNITER:/uniter,/scratch/cluster/billyang/vqa_dataset:/vqa_dataset --nv -w /scratch/cluster/billyang/uniter_image bash run_train_singularity.sh train-vqa-mlm-test.jso
+python scripts/condorizer.py -j UNITER_VQA_OOV_1  -o /scratch/cluster/billyang/condor_output -g /lusr/opt/singularity-3.2.1/bin/singularity exec -B /u/billyang/classwork/21s/gnlp/project/UNITER:/uniter,/scratch/cluster/billyang/vqa_dataset:/vqa_dataset --nv -w /scratch/cluster/billyang/uniter_image bash run_train_singularity.sh train-vqa-joint.json
 ```
