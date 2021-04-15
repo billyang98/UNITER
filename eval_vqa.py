@@ -11,6 +11,7 @@ from apex import amp
 from horovod import torch as hvd
 import numpy as np
 from cytoolz import concat
+from tqdm import tqdm
 
 from data import (TokenBucketSampler, PrefetchLoader,
                   DetectFeatLmdb, TxtTokLmdb, VqaEvalDataset, vqa_eval_collate)
@@ -44,9 +45,9 @@ def main(opts):
     eval_img_db = DetectFeatLmdb(opts.img_db,
                                  model_opts.conf_th, model_opts.max_bb,
                                  model_opts.min_bb, model_opts.num_bb,
-                                 opts.compressed_db)
+                                 False)
     eval_txt_db = TxtTokLmdb(opts.txt_db, -1)
-    eval_dataset = VqaEvalDataset(len(ans2label), eval_txt_db, eval_img_db)
+    eval_dataset = VqaEvalDataset(len(ans2label), eval_txt_db, eval_img_db) 
 
     # Prepare model
     if exists(opts.checkpoint):
@@ -70,8 +71,10 @@ def main(opts):
                                  collate_fn=vqa_eval_collate)
     eval_dataloader = PrefetchLoader(eval_dataloader)
 
-    val_log, results, logits = evaluate(model, eval_dataloader, label2ans,
+    val_log, results, logits = evaluate(model, eval_dataloader, len(eval_dataset), label2ans,
                                         opts.save_logits)
+    for k, v in val_log.items():
+        print(f'{k} {v}')
     result_dir = f'{opts.output_dir}/results_test_{opts.test_name}'
     if not exists(result_dir) and rank == 0:
         os.makedirs(result_dir)
@@ -90,7 +93,7 @@ def main(opts):
                      **all_logits)
 
 @torch.no_grad()
-def evaluate(model, eval_loader, label2ans, save_logits=False, task='vqa'):
+def evaluate(model, eval_loader, eval_len, label2ans, save_logits=False, task='vqa'):
     LOGGER.info("start running evaluation {}...".format(task))
     model.eval()
     n_ex = 0
@@ -98,6 +101,7 @@ def evaluate(model, eval_loader, label2ans, save_logits=False, task='vqa'):
     st = time()
     results = []
     logits = {}
+    pbar = tqdm(total=eval_len)
     for i, batch in enumerate(eval_loader):
         qids = batch['qids']
         scores = model(batch, compute_loss=False, task=task)
@@ -107,7 +111,7 @@ def evaluate(model, eval_loader, label2ans, save_logits=False, task='vqa'):
                    for i in scores.max(dim=-1, keepdim=False
                                        )[1].cpu().tolist()]
         for qid, answer in zip(qids, answers):
-            results.append({'answer': answer, 'question_id': int(qid)})
+            results.append({'answer': answer, 'question_id': qid})
         if save_logits:
             scores = scores.cpu()
             for i, qid in enumerate(qids):
@@ -118,6 +122,10 @@ def evaluate(model, eval_loader, label2ans, save_logits=False, task='vqa'):
             LOGGER.info(f'{n_results}/{len(eval_loader.dataset)} '
                         'answers predicted')
         n_ex += len(qids)
+        pbar.update(len(qids))
+        # TODO: dont commit, for testing only
+        #if i > 4:
+        #    break
     tot_score = sum(all_gather_list(tot_score))
     n_ex = sum(all_gather_list(n_ex))
     acc = tot_score / n_ex

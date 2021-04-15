@@ -5,7 +5,7 @@
     "model_config": "config/uniter-base.json",
     "checkpoint": "3000",
     "max_txt_len": 60,
-    "batch_size": 10240,
+    "batch_size": 1024,
     "fp16": true,
     "n_workers": 4,
     "pin_mem": true,
