@@ -155,13 +155,17 @@ def main(opts):
         checkpoint = torch.load(join(opts.checkpoint_dir, checkpoint_file))
     else:
         checkpoint = {}
+    
+    model_config = opts.model_config
+    if exists(join(opts.output_dir, 'log', 'model.json')):
+        model_config = join(opts.output_dir, 'log', 'model.json')
 
     all_dbs = opts.train_txt_dbs + [opts.val_txt_db]
     toker = json.load(open(f'{all_dbs[0]}/meta.json'))['bert']
     assert all(toker == json.load(open(f'{db}/meta.json'))['bert']
                for db in all_dbs)
     model = UniterForVisualQuestionAnswering.from_pretrained(
-        opts.model_config, checkpoint,
+        model_config, checkpoint,
         img_dim=IMG_DIM, num_answer=len(ans2label))
     model.to(device)
     # make sure every process has same model parameters in the beginning
