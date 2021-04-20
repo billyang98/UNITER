@@ -129,6 +129,10 @@ def vqa_collate(inputs):
 
 
 class VqaEvalDataset(VqaDataset):
+    def __init__(self, is_mlm_inference=False, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.is_mlm_inference = is_mlm_inference
+
     def __getitem__(self, i):
         qid = self.ids[i]
         example = DetectFeatTxtTokDataset.__getitem__(self, i)
@@ -140,7 +144,7 @@ class VqaEvalDataset(VqaDataset):
         input_ids = self.txt_db.combine_inputs(input_ids)
 
         # masked text input
-        masked_input_ids, masked_txt_labels = self.create_mlm_io(example['input_ids'])
+        masked_input_ids, masked_txt_labels = self.create_mlm_io(example['input_ids'], is_mlm_inference=self.is_mlm_inference)
 
         if 'target' in example:
             target = _get_vqa_target(example, self.num_answers)
@@ -151,8 +155,13 @@ class VqaEvalDataset(VqaDataset):
 
         return qid, input_ids, img_feat, img_pos_feat, attn_masks, target, masked_input_ids, masked_txt_labels
 
-    def create_mlm_io(self, input_ids):
-        input_ids, txt_labels = random_word(input_ids,
+    def create_mlm_io(self, input_ids, is_mlm_inference=False):
+        if is_mlm_inference:
+            input_ids, txt_labels = self.create_txt_labels(input_ids,
+                                            self.txt_db.v_range,
+                                            self.txt_db.mask)
+        else:
+            input_ids, txt_labels = random_word(input_ids,
                                             self.txt_db.v_range,
                                             self.txt_db.mask)
         input_ids = torch.tensor([self.txt_db.cls_]
@@ -160,6 +169,17 @@ class VqaEvalDataset(VqaDataset):
                                  + [self.txt_db.sep])
         txt_labels = torch.tensor([-1] + txt_labels + [-1])
         return input_ids, txt_labels
+
+    def create_txt_labels(self, tokens, vocab_range, mask):
+        output_label = []
+
+        for i, token in enumerate(tokens):
+            if tokens[i] == mask:
+                output_label.append(token)
+            else:
+                output_label.append(-1)
+
+        return tokens, output_label
 
 def vqa_eval_collate(inputs):
     (qids, input_ids, img_feats, img_pos_feats, attn_masks, targets,

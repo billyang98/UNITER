@@ -47,7 +47,7 @@ def main(opts):
                                  model_opts.min_bb, model_opts.num_bb,
                                  False)
     eval_txt_db = TxtTokLmdb(opts.txt_db, -1)
-    eval_dataset = VqaEvalDataset(len(ans2label), eval_txt_db, eval_img_db)
+    eval_dataset = VqaEvalDataset(len(ans2label), eval_txt_db, eval_img_db, is_mlm_inference=True)
 
     # Prepare model
     if exists(opts.checkpoint):
