@@ -4,7 +4,7 @@ from pytorch_pretrained_bert import BertTokenizer
 import sys
 import msgpack
 from lz4.frame import compress, decompress
-
+from tqdm import tqdm
 
 
 MASK = "[MASK]"
@@ -41,7 +41,7 @@ def remask(f_name, out_db, vocab_loc='vqa_words_not_in_bert.txt', strategy='all'
 
     tokenized_queries = {}
 
-    for key, value in cursor:
+    for key, value in tqdm(cursor):
         q_id = key.decode()
         q = msgpack.loads(decompress(value))
         query_text = q['question']
@@ -59,6 +59,7 @@ def remask(f_name, out_db, vocab_loc='vqa_words_not_in_bert.txt', strategy='all'
 
         new_q = compress(msgpack.dumps(q))
         new_set_c.put(key, new_q)
+    print("committing changes")
     new_set_c.commit()
 
 
