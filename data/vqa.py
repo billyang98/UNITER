@@ -129,9 +129,13 @@ def vqa_collate(inputs):
 
 
 class VqaEvalDataset(VqaDataset):
-    def __init__(self, is_mlm_inference=False, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.is_mlm_inference = is_mlm_inference
+        self.is_mlm_inference = False
+
+    def set_is_mlm_inference(self):
+        self.is_mlm_inference = True
+
 
     def __getitem__(self, i):
         qid = self.ids[i]

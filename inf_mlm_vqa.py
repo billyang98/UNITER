@@ -47,7 +47,8 @@ def main(opts):
                                  model_opts.min_bb, model_opts.num_bb,
                                  False)
     eval_txt_db = TxtTokLmdb(opts.txt_db, -1)
-    eval_dataset = VqaEvalDataset(len(ans2label), eval_txt_db, eval_img_db, is_mlm_inference=True)
+    eval_dataset = VqaEvalDataset(len(ans2label), eval_txt_db, eval_img_db)
+    eval_dataset.set_is_mlm_inference()
 
     # Prepare model
     if exists(opts.checkpoint):
@@ -85,14 +86,14 @@ def main(opts):
             all_logits.update(id2logit)
     if hvd.rank() == 0:
         with open(f'{result_dir}/'
-                  f'results_{opts.checkpoint}_all.json', 'w') as f:
+                  f'results_{opts.checkpoint}_all_{opts.task}.json', 'w') as f:
             json.dump(all_results, f)
         if opts.save_logits:
             np.savez(f'{result_dir}/logits_{opts.checkpoint}_all.npz',
                      **all_logits)
 
 @torch.no_grad()
-def inf_mlm(model, eval_loader, eval_len, label2ans, save_logits=False, task='mlm', is_mlm_inference=True):
+def inf_mlm(model, eval_loader, eval_len, label2ans, save_logits=False, task='mlm'):
     LOGGER.info("start running evaluation {}...".format(task))
     model.eval()
     n_ex = 0
@@ -102,11 +103,17 @@ def inf_mlm(model, eval_loader, eval_len, label2ans, save_logits=False, task='ml
     pbar = tqdm(total=eval_len)
     for i, batch in enumerate(eval_loader):
         qids = batch['qids']
+
         scores = model(batch, compute_loss=False, task=task)
         masked_toks = scores.max(dim=-1, keepdim=False
                                        )[1].cpu().tolist()
-        for qid, toks in zip(qids, masked_toks):
-            results.append({'masked_toks': masked_toks, 'question_id': qid})
+        masked_toks = iter(masked_toks)
+        for qid, q_toks in zip(qids, batch['input_ids']):
+            predicted_toks = []
+            for tok in q_toks:
+                if tok == 103:
+                    predicted_toks.append(next(masked_toks))
+            results.append({'predicted_toks': predicted_toks, 'question_id': qid})
         n_ex += len(qids)
         pbar.update(len(qids))
         # TODO: dont commit, for testing only
