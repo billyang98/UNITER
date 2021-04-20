@@ -116,11 +116,6 @@ def evaluate(model, eval_loader, eval_len, label2ans, save_logits=False, task='v
             scores = scores.cpu()
             for i, qid in enumerate(qids):
                 logits[qid] = scores[i].half().numpy()
-        if i % 100 == 0 and hvd.rank() == 0:
-            n_results = len(results)
-            n_results *= hvd.size()   # an approximation to avoid hangs
-            LOGGER.info(f'{n_results}/{len(eval_loader.dataset)} '
-                        'answers predicted')
         n_ex += len(qids)
         pbar.update(len(qids))
         # TODO: dont commit, for testing only
