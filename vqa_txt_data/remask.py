@@ -41,6 +41,8 @@ def remask(f_name, out_db, vocab_loc='vqa_words_not_in_bert.txt', strategy='all'
 
     tokenized_queries = {}
 
+    id2len_dict = {}
+
     for key, value in tqdm(cursor):
         q_id = key.decode()
         q = msgpack.loads(decompress(value))
@@ -57,10 +59,14 @@ def remask(f_name, out_db, vocab_loc='vqa_words_not_in_bert.txt', strategy='all'
         q['input_ids'] = query_ids
         tokenized_queries[q_id] = q
 
+        id2len_dict[q_id] = len(query_ids)
         new_q = compress(msgpack.dumps(q))
         new_set_c.put(key, new_q)
+
     print("committing changes")
     new_set_c.commit()
+    with open('{}/id2len.json'.format(out_db), 'w') as outfile:
+        json.dump(id2len_dict, outfile)
 
 
 
