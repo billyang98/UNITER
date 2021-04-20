@@ -24,7 +24,8 @@ from tqdm import tqdm
 from data import (TokenBucketSampler, PrefetchLoader,
                   TxtTokLmdb, ImageLmdbGroup, ConcatDatasetWithLens,
                   VqaDataset, VqaEvalDataset,
-                  vqa_collate, vqa_eval_collate)
+                  vqa_collate, vqa_eval_collate,
+                  MlmDataset, mlm_collate)
 from model.vqa import UniterForVisualQuestionAnswering
 from optim import AdamW, get_lr_sched
 
@@ -104,43 +105,67 @@ def main(opts):
 
     set_random_seed(opts.seed)
 
-    ans2label = json.load(open(f'{dirname(abspath(__file__))}'
-                               f'/utils/ans2label.json'))
-    label2ans = {label: ans for ans, label in ans2label.items()}
-
     # load DBs and image dirs
     all_img_dbs = ImageLmdbGroup(opts.conf_th, opts.max_bb, opts.min_bb,
-                                 opts.num_bb, opts.compressed_db)
+                                opts.num_bb, opts.compressed_db)
     # train
     LOGGER.info(f"Loading Train Dataset "
                 f"{opts.train_txt_dbs}, {opts.train_img_dbs}")
+    ans2label = json.load(open(f'{dirname(abspath(__file__))}'
+			f'/utils/ans2label.json'))
+    label2ans = {label: ans for ans, label in ans2label.items()}
     train_datasets = []
-    for txt_path, img_path in zip(opts.train_txt_dbs, opts.train_img_dbs):
-        img_db = all_img_dbs[img_path]
-        txt_db = TxtTokLmdb(txt_path, opts.max_txt_len)
-        train_datasets.append(VqaDataset(len(ans2label), txt_db, img_db))
-    train_dataset = ConcatDatasetWithLens(train_datasets)
-    train_dataloader = build_dataloader(train_dataset, vqa_collate, True, opts)
-    # val
-    LOGGER.info(f"Loading Train Dataset {opts.val_txt_db}, {opts.val_img_db}")
-    val_img_db = all_img_dbs[opts.val_img_db]
-    val_txt_db = TxtTokLmdb(opts.val_txt_db, -1)
-    val_dataset = VqaEvalDataset(len(ans2label), val_txt_db, val_img_db)
-    val_dataloader = build_dataloader(val_dataset, vqa_eval_collate,
-                                      False, opts)
+    if opts.task == 'vqa' or opts.task == 'joint':
+        LOGGER.info("Loading VQA Datasets")
+        for txt_path, img_path in zip(opts.train_txt_dbs, opts.train_img_dbs):
+            img_db = all_img_dbs[img_path]
+            txt_db = TxtTokLmdb(txt_path, opts.max_txt_len)
+            train_datasets.append(VqaDataset(len(ans2label), txt_db, img_db))
+        train_dataset = ConcatDatasetWithLens(train_datasets)
+        train_dataloader = build_dataloader(train_dataset, vqa_collate, True, opts)
+        # val
+        LOGGER.info(f"Loading Val Dataset {opts.val_txt_db}, {opts.val_img_db}")
+        val_img_db = all_img_dbs[opts.val_img_db]
+        val_txt_db = TxtTokLmdb(opts.val_txt_db, -1)
+        val_dataset = VqaEvalDataset(len(ans2label), val_txt_db, val_img_db)
+        val_dataloader = build_dataloader(val_dataset, vqa_eval_collate,
+                                        False, opts)
+    elif opts.task == 'mlm':
+        LOGGER.info("Loading MLM Dataset")
+        for txt_path, img_path in zip(opts.train_txt_dbs, opts.train_img_dbs):
+            img_db = all_img_dbs[img_path]
+            txt_db = TxtTokLmdb(txt_path, opts.max_txt_len)
+            train_datasets.append(MlmDataset(txt_db, img_db))
+        train_dataset = ConcatDatasetWithLens(train_datasets)
+        train_dataloader = build_dataloader(train_dataset, mlm_collate, True, opts)
+        LOGGER.info(f"Loading Val Dataset {opts.val_txt_db}, {opts.val_img_db}")
+        val_img_db = all_img_dbs[opts.val_img_db]
+        val_txt_db = TxtTokLmdb(opts.val_txt_db, -1)
+        val_dataset = MlmDataset(val_txt_db, val_img_db)
+        val_dataloader = build_dataloader(val_dataset, mlm_collate, False, opts)
 
+    current_step = 0
     # Prepare model
-    if opts.checkpoint:
-        checkpoint = torch.load(opts.checkpoint)
+    if opts.checkpoint_dir:
+        checkpoints = os.listdir(opts.checkpoint_dir)
+        checkpoints = list(filter(lambda x: x.startswith('model_step'), checkpoints))
+        steps = [int((s[len('model_step_'):])[:-len('.pt')]) for s in checkpoints]
+        current_step = max(steps)
+        checkpoint_file = 'model_step_{}.pt'.format(current_step)
+        checkpoint = torch.load(join(opts.checkpoint_dir, checkpoint_file))
     else:
         checkpoint = {}
+    
+    model_config = opts.model_config
+    if exists(join(opts.output_dir, 'log', 'model.json')):
+        model_config = join(opts.output_dir, 'log', 'model.json')
 
     all_dbs = opts.train_txt_dbs + [opts.val_txt_db]
     toker = json.load(open(f'{all_dbs[0]}/meta.json'))['bert']
     assert all(toker == json.load(open(f'{db}/meta.json'))['bert']
                for db in all_dbs)
     model = UniterForVisualQuestionAnswering.from_pretrained(
-        opts.model_config, checkpoint,
+        model_config, checkpoint,
         img_dim=IMG_DIM, num_answer=len(ans2label))
     model.to(device)
     # make sure every process has same model parameters in the beginning
@@ -149,17 +174,24 @@ def main(opts):
 
     # Prepare optimizer
     optimizer = build_optimizer(model, opts)
+    if current_step > 0 and opts.checkpoint_dir:
+        train_state_file = join(opts.checkpoint_dir, 'train_state_{}.pt'.format(current_step))
+        if exists(train_state_file):
+            train_state = torch.load(train_state_file)
+            optimizer.load_state_dict(train_state['optimizer'])
     model, optimizer = amp.initialize(model, optimizer,
                                       enabled=opts.fp16, opt_level='O2')
-    global_step = 0
+    global_step = current_step
     if rank == 0:
         save_training_meta(opts)
         TB_LOGGER.create(join(opts.output_dir, 'log'))
         pbar = tqdm(total=opts.num_train_steps)
+        pbar.update(global_step)
         model_saver = ModelSaver(join(opts.output_dir, 'ckpt'))
         json.dump(ans2label,
                   open(join(opts.output_dir, 'ckpt', 'ans2label.json'), 'w'))
-        os.makedirs(join(opts.output_dir, 'results'))  # store VQA predictions
+        if not os.path.exists(join(opts.output_dir, 'results')):
+            os.makedirs(join(opts.output_dir, 'results'))  # store VQA predictions
         add_log_to_file(join(opts.output_dir, 'log', 'log.txt'))
     else:
         LOGGER.disabled = True
@@ -183,9 +215,13 @@ def main(opts):
     while True:
         for step, batch in enumerate(train_dataloader):
             n_examples += batch['input_ids'].size(0)
-
-            loss = model(batch, compute_loss=True)
-            loss = loss.mean() * batch['targets'].size(1)  # instance-leval bce
+            # do one task for opts.gradient_accumulation_steps then switch
+            task = 'vqa' if step // opts.gradient_accumulation_steps % 2 == 0 else 'mlm'
+            loss = model(batch, compute_loss=True, task=task)
+            if task == 'vqa':
+                loss = loss.mean() * batch['targets'].size(1)  # instance-leval bce
+            if task == 'mlm':
+                loss = loss.mean()
             delay_unscale = (step+1) % opts.gradient_accumulation_steps != 0
             with amp.scale_loss(loss, optimizer, delay_unscale=delay_unscale
                                 ) as scaled_loss:
@@ -247,7 +283,11 @@ def main(opts):
                               f'rank{rank}.json', 'w') as f:
                         json.dump(results, f)
                     TB_LOGGER.log_scaler_dict(val_log)
-                    model_saver.save(model, global_step)
+                    val_log = validate_mlm(model, val_dataloader)
+                    val_log = {f'{task}_{k}': v for k, v in val_log.items()}
+                    TB_LOGGER.log_scaler_dict(
+                        {f'valid_{task}/{k}': v for k, v in val_log.items()})
+                    model_saver.save(model, global_step, optimizer=optimizer)
             if global_step >= opts.num_train_steps:
                 break
         if global_step >= opts.num_train_steps:
@@ -257,10 +297,14 @@ def main(opts):
     if opts.num_train_steps % opts.valid_steps != 0:
         val_log, results = validate(model, val_dataloader, label2ans)
         with open(f'{opts.output_dir}/results/'
-                  f'results_{global_step}_'
-                  f'rank{rank}.json', 'w') as f:
+                f'results_{global_step}_'
+                f'rank{rank}.json', 'w') as f:
             json.dump(results, f)
         TB_LOGGER.log_scaler_dict(val_log)
+        val_log = validate_mlm(model, val_dataloader)
+        val_log = {f'{task}_{k}': v for k, v in val_log.items()}
+        TB_LOGGER.log_scaler_dict(
+            {f'valid_{task}/{k}': v for k, v in val_log.items()})
         model_saver.save(model, global_step)
 
 
@@ -274,7 +318,7 @@ def validate(model, val_loader, label2ans):
     st = time()
     results = {}
     for i, batch in enumerate(val_loader):
-        scores = model(batch, compute_loss=False)
+        scores = model(batch, compute_loss=False, task='vqa')
         targets = batch['targets']
         loss = F.binary_cross_entropy_with_logits(
             scores, targets, reduction='sum')
@@ -286,6 +330,9 @@ def validate(model, val_loader, label2ans):
         for qid, answer in zip(batch['qids'], answers):
             results[qid] = answer
         n_ex += len(batch['qids'])
+       	# TODO: remove grossness when actual training don't commit this
+       	#if i > 4:
+       	#    break
     val_loss = sum(all_gather_list(val_loss))
     tot_score = sum(all_gather_list(tot_score))
     n_ex = sum(all_gather_list(n_ex))
@@ -300,6 +347,37 @@ def validate(model, val_loader, label2ans):
                 f"score: {val_acc*100:.2f}")
     return val_log, results
 
+
+@torch.no_grad()
+def validate_mlm(model, val_loader):
+    LOGGER.info("start running MLM validation...")
+    val_loss = 0
+    n_correct = 0
+    n_word = 0
+    st = time()
+    for i, batch in enumerate(val_loader):
+        scores = model(batch, task='mlm', compute_loss=False)
+        labels = batch['masked_txt_labels']
+        labels = labels[labels != -1]
+        loss = F.cross_entropy(scores, labels, reduction='sum')
+        val_loss += loss.item()
+        n_correct += (scores.max(dim=-1)[1] == labels).sum().item()
+        n_word += labels.numel()
+       	# TODO: remove grossness when actual training don't commit this
+       	#if i > 4:
+       	#    break
+    val_loss = sum(all_gather_list(val_loss))
+    n_correct = sum(all_gather_list(n_correct))
+    n_word = sum(all_gather_list(n_word))
+    tot_time = time()-st
+    val_loss /= n_word
+    acc = n_correct / n_word
+    val_log = {'loss': val_loss,
+               'acc': acc,
+               'tok_per_s': n_word/tot_time}
+    LOGGER.info(f"validation finished in {int(tot_time)} seconds, "
+                f"acc: {acc*100:.2f}")
+    return val_log
 
 def compute_score_with_logits(logits, labels):
     logits = torch.max(logits, 1)[1]  # argmax
@@ -386,11 +464,14 @@ if __name__ == "__main__":
     # can use config files
     parser.add_argument('--config', help='JSON config files')
 
+    parser.add_argument('--task', type=str, default="vqa",
+                                help='Which task to finetune')
+
     args = parse_with_config(parser)
 
-    if exists(args.output_dir) and os.listdir(args.output_dir):
-        raise ValueError("Output directory ({}) already exists and is not "
-                         "empty.".format(args.output_dir))
+    #if exists(args.output_dir) and os.listdir(args.output_dir):
+    #    raise ValueError("Output directory ({}) already exists and is not "
+    #                     "empty.".format(args.output_dir))
 
     # options safe guard
     if args.conf_th == -1:
