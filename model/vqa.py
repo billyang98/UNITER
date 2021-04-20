@@ -31,7 +31,7 @@ class UniterForVisualQuestionAnswering(UniterPreTrainedModel):
         self.cls = BertOnlyMLMHead(
             config, self.uniter.embeddings.word_embeddings.weight)
 
-    def forward(self, batch, compute_loss=True, task='vqa'):
+    def forward(self, batch, compute_loss=True, task='vqa', is_mlm_inference=False):
         assert(task == 'vqa' or task =='mlm')
         batch = defaultdict(lambda: None, batch)
         input_ids = batch['input_ids']
@@ -57,7 +57,8 @@ class UniterForVisualQuestionAnswering(UniterPreTrainedModel):
                 return answer_scores
         elif task == 'mlm':
             txt_labels = batch['masked_txt_labels']
-            input_ids = batch['masked_input_ids']
+            if not is_mlm_inference:
+                input_ids = batch['masked_input_ids']
             # get only the text part
             sequence_output = sequence_output[:, :input_ids.size(1), :]
             # only compute masked tokens for better efficiency
