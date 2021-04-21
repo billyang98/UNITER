@@ -14,6 +14,7 @@ from io import open
 import torch
 from torch import nn
 from apex.normalization.fused_layer_norm import FusedLayerNorm
+from torch.nn import LayerNorm as FusedLayerNorm
 
 from .layer import BertLayer, BertPooler
 
