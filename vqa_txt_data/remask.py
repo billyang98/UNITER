@@ -12,6 +12,13 @@ MASK_ID = 103
 QUESTION_MARK_ID = 136
 QUESTION_MARK= "@@?"
 
+def is_int(s):
+    try: 
+        int(s)
+        return True
+    except ValueError:
+        return False
+
 def remask(f_name, out_db, vocab_loc='vqa_words_not_in_bert.txt', strategy='all'):
     with open(vocab_loc, 'r') as f:
         words = json.load(f)
@@ -24,10 +31,45 @@ def remask(f_name, out_db, vocab_loc='vqa_words_not_in_bert.txt', strategy='all'
             else:
                 query_tokens += tok.tokenize(word)
         query_ids = tok.convert_tokens_to_ids(query_tokens)
-        return query_tokens, query_ids
+        return query_tokens, query_ids, True
+
+    def mask_characters(query_words):
+        query_tokens = []
+        did_mask = False
+        for _, word in enumerate(query_words):
+            tokenized_word = tok.tokenize(word)
+            if len(tokenized_word) == len(word):
+                query_tokens += [MASK]
+                did_mask = True
+            else:
+                query_tokens += tokenized_word
+        query_ids = tok.convert_tokens_to_ids(query_tokens)
+        return query_tokens, query_ids, did_mask
+
+    def mask_n(n, query_words):
+        query_tokens = []
+        did_mask = False
+        for _, word in enumerate(query_words):
+            tokenized_word = tok.tokenize(word)
+            if len(tokenized_word) > n:
+                query_tokens += [MASK]
+                did_mask = True
+            else:
+                query_tokens += tokenized_word
+        query_ids = tok.convert_tokens_to_ids(query_tokens)
+        return query_tokens, query_ids, did_mask
+    
+    def get_mask_n_lambda(n):
+        def mask_n_lambda(query_words):
+           return mask_n(n, query_words) 
+        return mask_n_lambda
 
     if strategy == 'all':
         mask_fn = mask_all
+    elif strategy == 'character':
+        mask_fn = mask_characters
+    elif is_int(strategy):
+        mask_fn = get_mask_n_lambda(int(strategy)) 
     else:
         print("#### INVALID STRATEGY QUITTING ####")
         return
@@ -43,6 +85,8 @@ def remask(f_name, out_db, vocab_loc='vqa_words_not_in_bert.txt', strategy='all'
 
     id2len_dict = {}
 
+    questions_changed = []
+
     for key, value in tqdm(cursor):
         q_id = key.decode()
         q = msgpack.loads(decompress(value))
@@ -51,7 +95,9 @@ def remask(f_name, out_db, vocab_loc='vqa_words_not_in_bert.txt', strategy='all'
             query_text = query_text[0:-1]
         query_words = query_text.split(" ")
 
-        query_tokens, query_ids = mask_fn(query_words)
+        query_tokens, query_ids, did_mask = mask_fn(query_words)
+        if did_mask:
+            questions_changed.append(q_id)
         if query_text[-1] == '?':
             query_tokens.append(QUESTION_MARK)
             query_ids.append(QUESTION_MARK_ID)
@@ -67,8 +113,10 @@ def remask(f_name, out_db, vocab_loc='vqa_words_not_in_bert.txt', strategy='all'
     new_set_c.commit()
     with open('{}/id2len.json'.format(out_db), 'w') as outfile:
         json.dump(id2len_dict, outfile)
+    with open('{}/questions_changed.json'.format(out_db), 'w') as outfile:
+        json.dump(questions_changed, outfile)
 
 
 
 if __name__ == '__main__':
-    remask(sys.argv[1], sys.argv[2])
+    remask(sys.argv[1], sys.argv[2], strategy=sys.argv[3])

@@ -105,12 +105,16 @@ def inf_mlm(model, eval_loader, eval_len, label2ans, save_logits=False, task='ml
         qids = batch['qids']
 
         scores = model(batch, compute_loss=False, task=task)
-        masked_toks = scores.max(dim=-1, keepdim=False
-                                       )[1].cpu().tolist()
-        masked_toks = iter(masked_toks)
+        if scores.nelement() == 0:
+            masked_toks = iter([])
+        else:
+            masked_toks = scores.max(dim=-1, keepdim=False
+                                           )[1].cpu().tolist()
+            masked_toks = iter(masked_toks)
         for qid, q_toks in zip(qids, batch['input_ids']):
             predicted_toks = []
             for tok in q_toks:
+                tok = tok.item()
                 if tok == 103:
                     predicted_toks.append(next(masked_toks))
             results.append({'predicted_toks': predicted_toks, 'question_id': qid})
