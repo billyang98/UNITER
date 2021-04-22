@@ -3,8 +3,10 @@ import numpy as np
 from tqdm import tqdm
 
 # Change these based on experiment
-exp_dataset = 'mask_chars_oov_test_set.db'
-exp_name = 'results_test_synonyms_masked_char'
+#exp_dataset = 'mask_chars_oov_test_set.db'
+#exp_name = 'results_test_synonyms_masked_char'
+exp_dataset = 'mask_3_oov_test_set.db'
+exp_name = 'results_test_synonyms_masked_3'
 
 q_list_file = '/scratch/cluster/billyang/vqa_dataset/txt_db/oov_datasets/{}/questions_changed.json'.format(exp_dataset)
 exp_ans_file = '/scratch/cluster/billyang/uniter_image/vqa_joint_trained/{}/results_3000_all.json'.format(exp_name)
