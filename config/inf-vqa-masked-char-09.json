@@ -1,5 +1,5 @@
 {
-    "txt_db": "/vqa_dataset/txt_db/oov_datasets/synonyms_mask_all_06_oov_test_set.db",
+    "txt_db": "/vqa_dataset/txt_db/oov_datasets/mask_chars_oov_test_set.db",
     "img_db": "/vqa_dataset/img_db/oov_datasets/oov_test_set",
     "output_dir": "/vqa_joint_trained",
     "model_config": "config/uniter-base.json",
@@ -9,7 +9,8 @@
     "fp16": true,
     "n_workers": 4,
     "pin_mem": true,
-    "task": "vqa",
     "save_logits": false,
-    "test_name": "synonyms_masked_all_06"
+    "task": "mlm",
+    "test_name": "synonyms_masked_char_09",
+    "predict_p": 0.9
 }
