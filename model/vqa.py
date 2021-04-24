@@ -32,7 +32,7 @@ class UniterForVisualQuestionAnswering(UniterPreTrainedModel):
             config, self.uniter.embeddings.word_embeddings.weight)
 
     def forward(self, batch, compute_loss=True, task='vqa'):
-        assert(task == 'vqa' or task =='mlm')
+        assert task == 'vqa' or task =='mlm', "Invalid task {}".format(task)
         batch = defaultdict(lambda: None, batch)
         input_ids = batch['input_ids']
         position_ids = batch['position_ids']
