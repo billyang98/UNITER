@@ -69,7 +69,7 @@ def remask(f_name, out_db, vocab_loc='vqa_words_not_in_bert.txt', strategy='all'
         synonyms_iter = get_qid_synonyms_iter(synonyms_dict, qid)
         for _, word in enumerate(query_words):
             tokenized_word = tok.tokenize(word)
-            if len(tokenized_word) == len(word):
+            if len(tokenized_word) == len(word) and len(word) > 1:
                 tokens_for_word, replaced_token = replace_token_using_synonyms(word, tok, synonyms_iter)
                 query_tokens += tokens_for_word
                 if replaced_token:
@@ -98,7 +98,7 @@ def remask(f_name, out_db, vocab_loc='vqa_words_not_in_bert.txt', strategy='all'
         synonyms_iter = get_qid_synonyms_iter(synonyms_dict, qid)
         for _, word in enumerate(query_words):
             tokenized_word = tok.tokenize(word)
-            if len(tokenized_word) == len(word) or len(tokenized_word) > 3:
+            if (len(tokenized_word) == len(word) and len(word) > 1) or len(tokenized_word) > 3:
                 tokens_for_word, replaced_token = replace_token_using_synonyms(word, tok, synonyms_iter)
                 query_tokens += tokens_for_word
                 if replaced_token:
@@ -141,15 +141,17 @@ def remask(f_name, out_db, vocab_loc='vqa_words_not_in_bert.txt', strategy='all'
     for key, value in tqdm(cursor):
         q_id = key.decode()
         q = msgpack.loads(decompress(value))
-        query_text = q['question']
+        original_query_text = q['question']
+        query_text = original_query_text
         if query_text[-1] == '?':
             query_text = query_text[0:-1]
         query_words = query_text.split(" ")
+        query_words = list(filter(lambda x: x != '', query_words))
 
         query_tokens, query_ids, did_mask = mask_fn(query_words, q_id)
         if did_mask:
             questions_changed.append(q_id)
-        if query_text[-1] == '?':
+        if original_query_text[-1] == '?':
             query_tokens.append(QUESTION_MARK)
             query_ids.append(QUESTION_MARK_ID)
         q['toked_question'] = query_tokens
