@@ -66,11 +66,14 @@ def remask(f_name, out_db, vocab_loc='vqa_words_not_in_bert.txt', strategy='all'
     def mask_characters(query_words, qid):
         query_tokens = []
         did_mask = False
+        synonyms_iter = get_qid_synonyms_iter(synonyms_dict, qid)
         for _, word in enumerate(query_words):
             tokenized_word = tok.tokenize(word)
             if len(tokenized_word) == len(word):
-                query_tokens += [MASK]
-                did_mask = True
+                tokens_for_word, replaced_token = replace_token_using_synonyms(word, tok, synonyms_iter)
+                query_tokens += tokens_for_word
+                if replaced_token:
+                    did_mask = True
             else:
                 query_tokens += tokenized_word
         query_ids = tok.convert_tokens_to_ids(query_tokens)
