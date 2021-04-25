@@ -91,6 +91,22 @@ def remask(f_name, out_db, vocab_loc='vqa_words_not_in_bert.txt', strategy='all'
                 query_tokens += tokenized_word
         query_ids = tok.convert_tokens_to_ids(query_tokens)
         return query_tokens, query_ids, did_mask
+
+    def mask_char3(query_words, qid):
+        query_tokens = []
+        did_mask = False
+        synonyms_iter = get_qid_synonyms_iter(synonyms_dict, qid)
+        for _, word in enumerate(query_words):
+            tokenized_word = tok.tokenize(word)
+            if len(tokenized_word) == len(word) or len(tokenized_word) > 3:
+                tokens_for_word, replaced_token = replace_token_using_synonyms(word, tok, synonyms_iter)
+                query_tokens += tokens_for_word
+                if replaced_token:
+                    did_mask = True
+            else:
+                query_tokens += tokenized_word
+        query_ids = tok.convert_tokens_to_ids(query_tokens)
+        return query_tokens, query_ids, did_mask
     
     def get_mask_n_lambda(n):
         def mask_n_lambda(query_words, qid):
@@ -103,6 +119,8 @@ def remask(f_name, out_db, vocab_loc='vqa_words_not_in_bert.txt', strategy='all'
         mask_fn = mask_characters
     elif is_int(strategy):
         mask_fn = get_mask_n_lambda(int(strategy)) 
+    elif 'char3':
+        mask_fn = mask_char3
     else:
         print("#### INVALID STRATEGY QUITTING ####")
         return
