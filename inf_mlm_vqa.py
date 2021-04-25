@@ -72,7 +72,7 @@ def main(opts):
                                  collate_fn=vqa_eval_collate)
     eval_dataloader = PrefetchLoader(eval_dataloader)
 
-    val_log, results, logits = inf_mlm(model, eval_dataloader, len(eval_dataset), label2ans, opts.save_logits)
+    val_log, results, logits = inf_mlm(model, eval_dataloader, len(eval_dataset), label2ans, opts.save_logits, predict_p=opts.predict_p)
     for k, v in val_log.items():
         print(f'{k} {v}')
     result_dir = f'{opts.output_dir}/results_test_{opts.test_name}'
@@ -93,7 +93,7 @@ def main(opts):
                      **all_logits)
 
 @torch.no_grad()
-def inf_mlm(model, eval_loader, eval_len, label2ans, save_logits=False, task='mlm'):
+def inf_mlm(model, eval_loader, eval_len, label2ans, save_logits=False, task='mlm', predict_p=0):
     LOGGER.info("start running evaluation {}...".format(task))
     model.eval()
     n_ex = 0
@@ -108,8 +108,21 @@ def inf_mlm(model, eval_loader, eval_len, label2ans, save_logits=False, task='ml
         if scores.nelement() == 0:
             masked_toks = iter([])
         else:
-            masked_toks = scores.max(dim=-1, keepdim=False
-                                           )[1].cpu().tolist()
+            if predict_p > 0:
+                assert predict_p <= 1, "Invalid prediction probability threshold {}".format(predict_p)
+                softmax_scores = torch.nn.Softmax(dim=1)(scores)
+                max_scores = softmax_scores.max(dim=-1, keepdim=False)
+                scores = max_scores[0].cpu().tolist()
+                indices = max_scores[1].cpu().tolist()
+                masked_toks = []
+                for max_scores_i in range(0, len(scores)):
+                    if scores[max_scores_i] >= predict_p:
+                        masked_toks.append(indices[max_scores_i])
+                    else:
+                        masked_toks.append(-1)
+            else: 
+                masked_toks = scores.max(dim=-1, keepdim=False
+                                               )[1].cpu().tolist()
             masked_toks = iter(masked_toks)
         for qid, q_toks in zip(qids, batch['input_ids']):
             predicted_toks = []
