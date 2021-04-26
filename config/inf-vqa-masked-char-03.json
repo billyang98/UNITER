@@ -1,5 +1,5 @@
 {
-    "txt_db": "/vqa_dataset/txt_db/oov_datasets/mask_chars_oov_test_set.db",
+    "txt_db": "/vqa_dataset/txt_db/oov_datasets/mask_char_oov_test_set.db",
     "img_db": "/vqa_dataset/img_db/oov_datasets/oov_test_set",
     "output_dir": "/vqa_joint_trained",
     "model_config": "config/uniter-base.json",
@@ -11,6 +11,6 @@
     "pin_mem": true,
     "save_logits": false,
     "task": "mlm",
-    "test_name": "synonyms_masked_char_03",
+    "test_name": "synonyms_mask_char_03",
     "predict_p": 0.3
 }

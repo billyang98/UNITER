@@ -11,5 +11,6 @@
     "pin_mem": true,
     "save_logits": false,
     "task": "mlm",
-    "test_name": "synonyms_masked_3"
+    "predict_p": 0,
+    "test_name": "synonyms_mask_3"
 }

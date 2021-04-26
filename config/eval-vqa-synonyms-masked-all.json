@@ -11,5 +11,5 @@
     "pin_mem": true,
     "task": "vqa",
     "save_logits": false,
-    "test_name": "synonyms_masked_all"
+    "test_name": "synonyms_mask_all"
 }

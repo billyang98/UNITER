@@ -11,5 +11,5 @@
     "pin_mem": true,
     "task": "vqa",
     "save_logits": false,
-    "test_name": "masked_char3"
+    "test_name": "mask_char3"
 }
