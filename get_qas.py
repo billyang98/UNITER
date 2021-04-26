@@ -84,4 +84,8 @@ def get_qas(name, exp_db_path, exp_ans_path, exp_comp_path, sample=-1):
         
 
 if __name__ == '__main__':
-    get_qas(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
+    if len(sys.argv) == 6:
+        sample = int(sys.argv[5])
+    else:
+        sample = -1
+    get_qas(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sample)

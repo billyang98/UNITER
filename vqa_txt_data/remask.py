@@ -21,29 +21,46 @@ def is_int(s):
 
 def get_qid_synonyms_iter(synonyms_dict, qid):
     if synonyms_dict is not None: 
-        synonyms_list = synonyms_dict[qid]
-        synonyms_iter = iter(synonyms_list)
-        return synonyms_iter
+        if qid in synonyms_dict:
+            synonyms_list = synonyms_dict[qid]
+            synonyms_iter = iter(synonyms_list)
+            return synonyms_iter
+        return iter([])
     return None
 
-def replace_token_using_synonyms(word, tok, synonyms_iter):
+def replace_token_using_synonyms(word, tok, synonyms_iter, still_mask, mask_low_prob):
     new_tokens = []
     replaced_token = False
     if synonyms_iter is not None:
-        synonym = next(synonyms_iter)
+        try:
+            synonym = next(synonyms_iter)
+        except StopIteration:
+            return [], False
         if synonym == -1:
             # do not use synonym
-            new_tokens += tok.tokenize(word)
+            if mask_low_prob:
+                new_tokens += [MASK]
+                replaced_token = True
+            else:
+                new_tokens += tok.tokenize(word)
         else:
-            new_tokens += tok.convert_ids_to_tokens([synonym])
-            replaced_token = True
+            if mask_low_prob:
+                # high probabilty word is tokenized as normal
+                new_tokens += tok.tokenize(word)
+            elif still_mask:
+                # just use mask
+                new_tokens += [MASK]
+                replaced_token = True
+            else:
+                new_tokens += tok.convert_ids_to_tokens([synonym])
+                replaced_token = True
     else:
         new_tokens += [MASK]
         replaced_token = True
     return new_tokens, replaced_token
 
 
-def remask(f_name, out_db, vocab_loc='vqa_words_not_in_bert.txt', strategy='all', synonyms_dict=None):
+def remask(f_name, out_db, vocab_loc='vqa_words_not_in_bert.txt', strategy='all', synonyms_dict=None, mask_low_prob=False, still_mask=False):
     with open(vocab_loc, 'r') as f:
         words = json.load(f)
     tok = BertTokenizer.from_pretrained('bert-base-cased')
@@ -54,7 +71,7 @@ def remask(f_name, out_db, vocab_loc='vqa_words_not_in_bert.txt', strategy='all'
         did_mask = False
         for _, word in enumerate(query_words):
             if word in words:
-                tokens_for_word, replaced_token = replace_token_using_synonyms(word, tok, synonyms_iter)
+                tokens_for_word, replaced_token = replace_token_using_synonyms(word, tok, synonyms_iter, still_mask)
                 query_tokens += tokens_for_word
                 if replaced_token:
                     did_mask = True
@@ -70,7 +87,7 @@ def remask(f_name, out_db, vocab_loc='vqa_words_not_in_bert.txt', strategy='all'
         for _, word in enumerate(query_words):
             tokenized_word = tok.tokenize(word)
             if len(tokenized_word) == len(word) and len(word) > 1:
-                tokens_for_word, replaced_token = replace_token_using_synonyms(word, tok, synonyms_iter)
+                tokens_for_word, replaced_token = replace_token_using_synonyms(word, tok, synonyms_iter, still_mask, mask_low_prob)
                 query_tokens += tokens_for_word
                 if replaced_token:
                     did_mask = True
@@ -99,7 +116,7 @@ def remask(f_name, out_db, vocab_loc='vqa_words_not_in_bert.txt', strategy='all'
         for _, word in enumerate(query_words):
             tokenized_word = tok.tokenize(word)
             if (len(tokenized_word) == len(word) and len(word) > 1) or len(tokenized_word) > 3:
-                tokens_for_word, replaced_token = replace_token_using_synonyms(word, tok, synonyms_iter)
+                tokens_for_word, replaced_token = replace_token_using_synonyms(word, tok, synonyms_iter, still_mask)
                 query_tokens += tokens_for_word
                 if replaced_token:
                     did_mask = True
@@ -110,7 +127,7 @@ def remask(f_name, out_db, vocab_loc='vqa_words_not_in_bert.txt', strategy='all'
     
     def get_mask_n_lambda(n):
         def mask_n_lambda(query_words, qid):
-           return mask_n(n, query_words) 
+           return mask_n(n, query_words, qid) 
         return mask_n_lambda
 
     if strategy == 'all':
@@ -151,16 +168,16 @@ def remask(f_name, out_db, vocab_loc='vqa_words_not_in_bert.txt', strategy='all'
         query_tokens, query_ids, did_mask = mask_fn(query_words, q_id)
         if did_mask:
             questions_changed.append(q_id)
-        if original_query_text[-1] == '?':
-            query_tokens.append(QUESTION_MARK)
-            query_ids.append(QUESTION_MARK_ID)
-        q['toked_question'] = query_tokens
-        q['input_ids'] = query_ids
-        tokenized_queries[q_id] = q
+            if original_query_text[-1] == '?':
+                query_tokens.append(QUESTION_MARK)
+                query_ids.append(QUESTION_MARK_ID)
+            q['toked_question'] = query_tokens
+            q['input_ids'] = query_ids
+            tokenized_queries[q_id] = q
 
-        id2len_dict[q_id] = len(query_ids)
-        new_q = compress(msgpack.dumps(q))
-        new_set_c.put(key, new_q)
+            id2len_dict[q_id] = len(query_ids)
+            new_q = compress(msgpack.dumps(q))
+            new_set_c.put(key, new_q)
 
     print("committing changes")
     new_set_c.commit()
@@ -172,8 +189,14 @@ def remask(f_name, out_db, vocab_loc='vqa_words_not_in_bert.txt', strategy='all'
 
 
 if __name__ == '__main__':
+    synonyms_dict = None
+    mask_low_prob = False
+    still_mask = False
     if len(sys.argv) > 4:
         synonyms_dict = get_synonyms_dict(sys.argv[4])
-    else:
-        synonyms_dict = None
-    remask(sys.argv[1], sys.argv[2], strategy=sys.argv[3], synonyms_dict=synonyms_dict)
+    if len(sys.argv) > 5:
+        mask_low_prob = True
+    if len(sys.argv) > 6:
+        still_mask = True
+
+    remask(sys.argv[1], sys.argv[2], strategy=sys.argv[3], synonyms_dict=synonyms_dict, mask_low_prob=mask_low_prob, still_mask=still_mask)
