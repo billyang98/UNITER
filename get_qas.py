@@ -59,8 +59,8 @@ def get_qas(name, exp_db_path, exp_ans_path, exp_comp_path, sample=-1):
     rtw_list = exp_comp['rtw']
     wtr_list = exp_comp['wtr']
     if sample >= 0:
-        rtw_list = random.sample(rtw_list, sample)
-        wtr_list = random.sample(wtr_list, sample)
+        rtw_list = random.sample(rtw_list, min(sample, len(rtw_list)))
+        wtr_list = random.sample(wtr_list, min(sample, len(wtr_list)))
 
     bl_db = TxtLmdb(bl_db_path)
     exp_db = TxtLmdb(exp_db_path)
@@ -80,7 +80,7 @@ def get_qas(name, exp_db_path, exp_ans_path, exp_comp_path, sample=-1):
 
             qas_dict[list_name][qid] = {'bl_q': bl_q, 'exp_q': exp_q, 'bl_ans': bl_a, 'exp_ans': exp_a, 'img_fname': img_fname}
     print("dumping")
-    json.dump(qas_dict, open('qas_{}'.format(name), 'w'))
+    json.dump(qas_dict, open('qas_{}.json'.format(name), 'w'))
         
 
 if __name__ == '__main__':
