@@ -53,7 +53,7 @@ bl_ans = {o['question_id']: o['answer'] for o in baseline_ans_list}
 
 mexp_db_path = '/scratch/cluster/billyang/vqa_dataset/txt_db/oov_datasets/synonyms_mask_2_04m_oov_test_set.db'
 mexp_ans_list = json.load(open('/scratch/cluster/billyang/uniter_image/vqa_joint_trained/results_test_synonyms_mask_2_04m/results_3000_all.json'))
-mexp_ans = {o['question_id']: o['answer'] for o in baseline_ans_list}
+mexp_ans = {o['question_id']: o['answer'] for o in mexp_ans_list}
 
 
 def get_qas(name, exp_db_path, exp_ans_path, exp_comp_path, sample=-1):
