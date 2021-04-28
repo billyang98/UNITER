@@ -46,3 +46,25 @@ condor with eval
 ```
 python scripts/condorizer.py -j UNITER_VQA_EVAL_OOV_NORMAL  -o /scratch/cluster/billyang/condor_output -g  -n /lusr/opt/singularity-3.2.1/bin/singularity exec -B /u/billyang/classwork/21s/gnlp/project/UNITER:/uniter,/scratch/cluster/billyang/vqa_dataset:/vqa_dataset --nv -w /scratch/cluster/billyang/uniter_image bash run_eval_singularity.sh eval-vqa.json
 ```
+
+condor with inf
+```
+python scripts/condorizer.py -j UNITER_VQA_EVAL_MASKED_CHAR  -o /scratch/cluster/billyang/condor_output -g  /lusr/opt/singularity-3.2.1/bin/singularity exec -B /u/billyang/classwork/21s/gnlp/project/UNITER:/uniter,/scratch/cluster/billyang/vqa_dataset:/vqa_dataset --nv -w /scratch/cluster/billyang/uniter_image python uniter/inf_mlm_vqa.py --config uniter/config/inf-vqa-masked-char.json
+```
+
+
+install horovod
+```
+ HOROVOD_GPU_ALLREDUCE=NCCL HOROVOD_NCCL_LINK=SHARED HOROVOD_WITH_PYTORCH=1  pip install --no-cache-dir horovod
+
+
+HOROVOD_GPU_ALLREDUCE=NCCL HOROVOD_NCCL_LINK=SHARED HOROVOD_WITH_PYTORCH=1 \
+>     pip install --no-cache-dir horovod
+
+
+```
+
+install pytorch
+```
+conda install pytorch=1.7.0 torchvision cudatoolkit=10.1 -c pytorch
+```
