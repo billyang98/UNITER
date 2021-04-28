@@ -99,11 +99,14 @@ def remask(f_name, out_db, vocab_loc='vqa_words_not_in_bert.txt', strategy='all'
     def mask_n(n, query_words, qid):
         query_tokens = []
         did_mask = False
+        synonyms_iter = get_qid_synonyms_iter(synonyms_dict, qid)
         for _, word in enumerate(query_words):
             tokenized_word = tok.tokenize(word)
             if len(tokenized_word) > n:
-                query_tokens += [MASK]
-                did_mask = True
+                tokens_for_word, replaced_token = replace_token_using_synonyms(word, tok, synonyms_iter, still_mask, mask_low_prob)
+                query_tokens += tokens_for_word
+                if replaced_token:
+                    did_mask = True
             else:
                 query_tokens += tokenized_word
         query_ids = tok.convert_tokens_to_ids(query_tokens)
@@ -194,9 +197,9 @@ if __name__ == '__main__':
     still_mask = False
     if len(sys.argv) > 4:
         synonyms_dict = get_synonyms_dict(sys.argv[4])
-    if len(sys.argv) > 5:
-        mask_low_prob = True
     if len(sys.argv) > 6:
+        mask_low_prob = True
+    if len(sys.argv) > 5:
         still_mask = True
 
     remask(sys.argv[1], sys.argv[2], strategy=sys.argv[3], synonyms_dict=synonyms_dict, mask_low_prob=mask_low_prob, still_mask=still_mask)
