@@ -4,22 +4,22 @@ import msgpack
 from tqdm import tqdm
 import shutil
 
-#env = lmdb.open('/scratch/cluster/billyang/vqa_dataset/img_db/oov_datasets/oov_test_set/feat_th0.2_max100_min10', readonly=True, create=True, map_size=4*1024**4, writemap=True)
-#txn = env.begin()
-#name2nbb = json.load(open('/scratch/cluster/billyang/vqa_dataset/img_db/oov_datasets/oov_test_set/nbb_th0.2_max100_min10.json'))
-#
-##files = ['questions_answers/qas_mask-pl05-mask-2.json', 'questions_answers/qas_synonyms-pg04-mask-2.json']
-#files = ['questions_answers/qas_ms_2_pg04.json']
-#   
-#img_fnames = set()
-#
-#for file_name in files:
-#    qas = json.load(open(file_name))
-#    for q_dict in qas.values():
-#        for q in q_dict.values():
-#            img_fnames.add(q['img_fname'])
-#
-#json.dump(list(img_fnames), open('img_list2.json','w'))
+env = lmdb.open('/scratch/cluster/billyang/vqa_dataset/img_db/oov_datasets/oov_test_set/feat_th0.2_max100_min10', readonly=True, create=True, map_size=4*1024**4, writemap=True)
+txn = env.begin()
+name2nbb = json.load(open('/scratch/cluster/billyang/vqa_dataset/img_db/oov_datasets/oov_test_set/nbb_th0.2_max100_min10.json'))
+
+#files = ['questions_answers/qas_mask-pl05-mask-2.json', 'questions_answers/qas_synonyms-pg04-mask-2.json']
+files = ['questions_answers/qas_ms_2_pg04.json']
+   
+img_fnames = set()
+
+for file_name in files:
+    qas = json.load(open(file_name))
+    for q_dict in qas.values():
+        for q in q_dict.values():
+            img_fnames.add(q['img_fname'])
+
+json.dump(list(img_fnames), open('img_list2.json','w'))
 
 #for img_fname in img_fnames:
 #    nbb = name2nbb[img_fname]
