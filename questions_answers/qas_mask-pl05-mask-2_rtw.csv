@@ -1,0 +1,50 @@
+550126003,coco_train2014_000000550126.npz,"['What', 'is', 'this', 'room', ""@@'"", '@@s', 'use', '@@?']",bathroom,"['What', 'is', 'this', '[MASK]', 'use', '@@?']",shower
+VG_861829,vg_000002324315.npz,"['How', 'many', 'w', '@@##reath', '@@##s', 'are', 'visible', '@@?']",2,"['How', 'many', '[MASK]', 'are', 'visible', '@@?']",3
+73348000,coco_train2014_000000073348.npz,"['Is', 'the', 'kicks', '@@##tan', '@@##d', 'down', 'on', 'the', 'motorcycle', 'in', 'the', 'fore', '@@##ground', '@@?']",yes,"['Is', 'the', '[MASK]', 'down', 'on', 'the', 'motorcycle', 'in', 'the', 'fore', '##ground', '@@?']",no
+146910002,coco_val2014_000000146910.npz,"['What', 'is', 'on', 'the', 'man', ""@@'"", '@@s', 'eye', ""@@'"", '@@s', '@@?']",sunglasses,"['What', 'is', 'on', 'the', '[MASK]', '[MASK]', '@@?']",paper
+406326001,coco_train2014_000000406326.npz,"['Is', 'this', 'bed', 'in', 'di', '@@##sar', '@@##ray', '@@?']",no,"['Is', 'this', 'bed', 'in', '[MASK]', '@@?']",yes
+VG_1240382,vg_000002401270.npz,"['What', 'pattern', 'is', 'on', 'the', 'z', '@@##eb', '@@##ra', '@@?']",stripes,"['What', 'pattern', 'is', 'on', 'the', '[MASK]', '@@?']",zebra
+VG_1144713,vg_000002413274.npz,"['How', 'many', 'pro', '@@##ng', '@@##s', 'on', 'the', 'fork', '@@?']",4,"['How', 'many', '[MASK]', 'on', 'the', 'fork', '@@?']",3
+572174007,coco_train2014_000000572174.npz,"['In', 'what', 'position', 'are', 'the', 'woman', ""@@'"", '@@s', 'thumbs', '@@?']",up,"['In', 'what', 'position', 'are', 'the', '[MASK]', 'thumbs', '@@?']",left
+455558002,coco_train2014_000000455558.npz,"['What', 'color', 'are', 'the', 'young', 'man', ""@@'"", '@@s', 'shoe', '@@##lace', '@@##s', '@@?']",brown,"['What', 'color', 'are', 'the', 'young', 'man', ""'"", 's', '[MASK]', '@@?']",black
+VG_1110312,vg_000002410395.npz,"['What', 'color', 'is', 'the', 'goat', ""@@'"", '@@s', 'torso', '@@?']",black,"['What', 'color', 'is', 'the', '[MASK]', 'torso', '@@?']",white
+516712008,coco_train2014_000000516712.npz,"['Are', 'the', 'workers', 'wearing', 'v', '@@##is', '@@##ors', '@@?']",no,"['Are', 'the', 'workers', 'wearing', '[MASK]', '@@?']",yes
+VG_1593764,vg_000002398781.npz,"['Who', 'is', 'the', 'snow', '@@##board', '@@##er', '@@?']",man,"['Who', 'is', 'the', '[MASK]', '@@?']",snowboarder
+362023001,coco_val2014_000000362023.npz,"['Is', 'there', 'a', 'good', 'chance', 'this', 'chair', 'frequently', 'gets', 'p', '@@##oop', '@@##ed', 'on', '@@?']",yes,"['Is', 'there', 'a', 'good', 'chance', 'this', 'chair', 'frequently', 'gets', '[MASK]', 'on', '@@?']",no
+VG_1211138,vg_000002399927.npz,"['What', 'is', 'in', 'the', 'guitarist', ""@@'"", '@@s', 'lap', '@@##el', '@@?']",flower,"['What', 'is', 'in', 'the', '[MASK]', 'lap', '##el', '@@?']",tie
+26578003,coco_train2014_000000026578.npz,"['How', 'many', 't', '@@##usk', '@@##s', 'does', 'the', 'animal', 'have', '@@?']",2,"['How', 'many', '[MASK]', 'does', 'the', 'animal', 'have', '@@?']",1
+432448064,coco_train2014_000000432448.npz,"['Is', 'this', 'a', 'ha', '@@##mb', '@@##urger', '@@?']",no,"['Is', 'this', 'a', '[MASK]', '@@?']",yes
+266108003,coco_train2014_000000266108.npz,"['Is', 'there', 'anything', 'in', 'the', 'road', 'that', 'really', 'shouldn', ""@@'"", '@@t', 'be', '@@?']",no,"['Is', 'there', 'anything', 'in', 'the', 'road', 'that', 'really', '[MASK]', 'be', '@@?']",yes
+VG_846313,vg_000002336385.npz,"['What', 'color', 'is', 'the', 'fi', '@@##gu', '@@##rine', '@@?']",brown,"['What', 'color', 'is', 'the', '[MASK]', '@@?']",gray
+213922000,coco_train2014_000000213922.npz,"['Why', 'are', 'some', 'people', 'wearing', 'p', '@@##on', '@@##cho', '@@##s', '@@?']",yes,"['Why', 'are', 'some', 'people', 'wearing', '[MASK]', '@@?']",parade
+VG_1785675,vg_000002367652.npz,"['What', 'is', 'the', 'total', 'of', 'g', '@@##ira', '@@##ffe', '@@##s', '@@?']",2,"['What', 'is', 'the', 'total', 'of', '[MASK]', '@@?']",3
+399203002,coco_train2014_000000399203.npz,"['What', 'is', 'the', 'large', 're', '@@##ct', '@@##ang', '@@##le', 'on', 'the', 'wall', 'for', '@@?']",window,"['What', 'is', 'the', 'large', '[MASK]', 'on', 'the', 'wall', 'for', '@@?']",nothing
+VG_1334463,vg_000002411665.npz,"['What', 'is', 'the', 'z', '@@##eb', '@@##ra', 'color', '@@?']",black and white,"['What', 'is', 'the', '[MASK]', 'color', '@@?']",brown
+VG_512525,vg_000002353815.npz,"['What', 'color', 'is', 'the', 'woman', ""@@'"", '@@s', 'hair', '@@?']",brown,"['What', 'color', 'is', 'the', '[MASK]', 'hair', '@@?']",red
+VG_1683375,vg_000002362547.npz,"['What', 'u', '@@##tens', '@@##il', 'is', 'on', 'the', 'left', 'of', 'the', 'plate', '@@?']",knife,"['What', '[MASK]', 'is', 'on', 'the', 'left', 'of', 'the', 'plate', '@@?']",glass
+27544000,coco_train2014_000000027544.npz,"['What', 'kind', 'of', 'u', '@@##tens', '@@##il', 'is', 'on', 'the', 'tray', '@@?']",fork,"['What', 'kind', 'of', '[MASK]', 'is', 'on', 'the', 'tray', '@@?']",salad
+462082002,coco_train2014_000000462082.npz,"['Is', 'this', 'woman', 'eating', 'a', 'b', '@@##ur', '@@##rito', '@@?']",no,"['Is', 'this', 'woman', 'eating', 'a', '[MASK]', '@@?']",yes
+22080020,coco_train2014_000000022080.npz,"['How', 'many', 'p', '@@##latter', '@@##s', 'are', 'shown', '@@?']",1,"['How', 'many', '[MASK]', 'are', 'shown', '@@?']",3
+VG_681264,vg_000002382730.npz,"['What', 'color', 'is', 'the', 'z', '@@##eb', '@@##ra', '@@?']",black and white,"['What', 'color', 'is', 'the', '[MASK]', '@@?']",green
+189547018,coco_train2014_000000189547.npz,"['Does', 'the', 'sandwich', 'have', 'a', 'tooth', '@@##pic', '@@##k', '@@?']",no,"['Does', 'the', 'sandwich', 'have', 'a', '[MASK]', '@@?']",yes
+VG_372589,vg_000002368799.npz,"['How', 'many', 't', '@@##usk', '@@##s', 'does', 'he', 'have', '@@?']",2,"['How', 'many', '[MASK]', 'does', 'he', 'have', '@@?']",1
+485290000,coco_val2014_000000485290.npz,"['What', 'eating', 'u', '@@##tens', '@@##il', 'is', 'shown', '@@?']",fork,"['What', 'eating', '[MASK]', 'is', 'shown', '@@?']",breakfast
+VG_1098101,vg_000002410176.npz,"['What', 'color', 'is', 'the', 'g', '@@##ira', '@@##ffe', '@@?']",brown and white,"['What', 'color', 'is', 'the', '[MASK]', '@@?']",brown
+VG_1463087,vg_000002398342.npz,"['What', 'says', 'S', '@@##N', '@@##OW', '@@##BO', '@@##Y', 'PR', '@@##OD', '@@##UC', '@@##TI', '@@##ON', '@@##S', '@@?']",sign,"['What', 'says', '[MASK]', '[MASK]', '@@?']",building
+22270016,coco_train2014_000000022270.npz,"['What', 'color', 'are', 'the', 's', '@@##cis', '@@##sors', '@@?']",red,"['What', 'color', 'are', 'the', '[MASK]', '@@?']",black
+512531000,coco_train2014_000000512531.npz,"['What', 'color', 'is', 'the', 'ski', '@@##mbo', '@@##ard', '@@?']",red,"['What', 'color', 'is', 'the', '[MASK]', '@@?']",blue
+88080000,coco_train2014_000000088080.npz,"['How', 'many', 'z', '@@##eb', '@@##ra', 'heads', 'can', 'you', 'see', '@@?']",2,"['How', 'many', '[MASK]', 'heads', 'can', 'you', 'see', '@@?']",1
+469803002,coco_val2014_000000469803.npz,"['Why', 'is', 'the', 'h', '@@##yd', '@@##rant', 'looking', 'like', 'a', 'creature', '@@?']",paint,"['Why', 'is', 'the', '[MASK]', 'looking', 'like', 'a', 'creature', '@@?']",yes
+VG_1738130,vg_000002365259.npz,"['What', 'is', 'around', 'the', 'sheep', ""@@'"", '@@s', 'neck', '@@?']",collar,"['What', 'is', 'around', 'the', '[MASK]', 'neck', '@@?']",rope
+VG_188766,vg_000002408453.npz,"['What', 'color', 'is', 'the', 'catcher', ""@@'"", '@@s', 'helmet', '@@?']",red,"['What', 'color', 'is', 'the', '[MASK]', 'helmet', '@@?']",black
+343224001,coco_train2014_000000343224.npz,"['What', 'country', ""@@'"", '@@s', 'flag', 'is', 'displayed', '@@?']",usa,"['What', '[MASK]', 'flag', 'is', 'displayed', '@@?']",american
+VG_1428052,vg_000002391158.npz,"['What', 'pattern', 'is', 'on', 'the', 'z', '@@##eb', '@@##ras', '@@?']",stripes,"['What', 'pattern', 'is', 'on', 'the', '[MASK]', '@@?']",zebra
+VG_1111823,vg_000002411742.npz,"['What', 'color', 'is', 'the', 'water', '@@##mel', '@@##on', '@@?']",green,"['What', 'color', 'is', 'the', '[MASK]', '@@?']",red
+VG_1000491,vg_000000150313.npz,"['What', 'color', 'is', 'the', 'f', '@@##au', '@@##ce', '@@##t', '@@?']",silver,"['What', 'color', 'is', 'the', '[MASK]', '@@?']",white
+VG_1280621,vg_000002403340.npz,"['What', 'pattern', 'is', 'on', 'the', 'z', '@@##eb', '@@##ra', '@@?']",stripes,"['What', 'pattern', 'is', 'on', 'the', '[MASK]', '@@?']",zebra
+407770036,coco_train2014_000000407770.npz,"['What', 'is', 'in', 'the', 'women', ""@@'"", '@@s', 'hands', '@@?']",wii remote,"['What', 'is', 'in', 'the', '[MASK]', 'hands', '@@?']",wii remotes
+174427000,coco_train2014_000000174427.npz,"['Does', 'this', 'animal', 'appear', 'mist', '@@##reate', '@@##d', '@@?']",no,"['Does', 'this', 'animal', 'appear', '[MASK]', '@@?']",yes
+VG_1408117,vg_000002401953.npz,"['What', 'is', 'on', 'the', 'man', ""@@'"", '@@s', 'feet', '@@?']",sneakers,"['What', 'is', 'on', 'the', '[MASK]', 'feet', '@@?']",shoes
+116096011,coco_val2014_000000116096.npz,"['Which', 'country', ""@@'"", '@@s', 'flag', 'is', 'this', '@@?']",usa,"['Which', '[MASK]', 'flag', 'is', 'this', '@@?']",american
+211703021,coco_train2014_000000211703.npz,"['What', 'color', 'is', 'the', 'woman', ""@@'"", '@@s', 't', '@@-', '@@shirt', '@@?']",white,"['What', 'color', 'is', 'the', '[MASK]', '[MASK]', '@@?']",blue
+VG_605481,vg_000002397469.npz,"['What', 'is', 'the', 'z', '@@##eb', '@@##ra', 'doing', '@@?']",eating,"['What', 'is', 'the', '[MASK]', 'doing', '@@?']",grazing
