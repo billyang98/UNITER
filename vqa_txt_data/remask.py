@@ -28,12 +28,14 @@ def get_qid_synonyms_iter(synonyms_dict, qid):
         return iter([])
     return None
 
-def replace_token_using_synonyms(word, tok, synonyms_iter, still_mask, mask_low_prob):
+def replace_token_using_synonyms(word, tok, synonyms_iter, still_mask, mask_low_prob, ensemble):
     new_tokens = []
     replaced_token = False
     if synonyms_iter is not None:
         try:
             synonym = next(synonyms_iter)
+            if ensemble is not None:
+                synonym = synonym[ensemble - 1]
         except StopIteration:
             return [], False
         if synonym == -1:
@@ -60,7 +62,7 @@ def replace_token_using_synonyms(word, tok, synonyms_iter, still_mask, mask_low_
     return new_tokens, replaced_token
 
 
-def remask(f_name, out_db, vocab_loc='vqa_words_not_in_bert.txt', strategy='all', synonyms_dict=None, mask_low_prob=False, still_mask=False):
+def remask(f_name, out_db, vocab_loc='vqa_words_not_in_bert.txt', strategy='all', synonyms_dict=None, mask_low_prob=False, still_mask=False, ensemble=None):
     with open(vocab_loc, 'r') as f:
         words = json.load(f)
     tok = BertTokenizer.from_pretrained('bert-base-cased')
@@ -103,7 +105,7 @@ def remask(f_name, out_db, vocab_loc='vqa_words_not_in_bert.txt', strategy='all'
         for _, word in enumerate(query_words):
             tokenized_word = tok.tokenize(word)
             if len(tokenized_word) > n:
-                tokens_for_word, replaced_token = replace_token_using_synonyms(word, tok, synonyms_iter, still_mask, mask_low_prob)
+                tokens_for_word, replaced_token = replace_token_using_synonyms(word, tok, synonyms_iter, still_mask, mask_low_prob, ensemble)
                 query_tokens += tokens_for_word
                 if replaced_token:
                     did_mask = True
@@ -195,11 +197,14 @@ if __name__ == '__main__':
     synonyms_dict = None
     mask_low_prob = False
     still_mask = False
+    ensemble=None
     if len(sys.argv) > 4:
         synonyms_dict = get_synonyms_dict(sys.argv[4])
-    if len(sys.argv) > 6:
-        mask_low_prob = True
     if len(sys.argv) > 5:
+        ensemble = int(sys.argv[5])
+    if len(sys.argv) > 7:
+        mask_low_prob = True
+    if len(sys.argv) > 6:
         still_mask = True
 
-    remask(sys.argv[1], sys.argv[2], strategy=sys.argv[3], synonyms_dict=synonyms_dict, mask_low_prob=mask_low_prob, still_mask=still_mask)
+    remask(sys.argv[1], sys.argv[2], strategy=sys.argv[3], synonyms_dict=synonyms_dict, mask_low_prob=mask_low_prob, still_mask=still_mask, ensemble=ensemble)

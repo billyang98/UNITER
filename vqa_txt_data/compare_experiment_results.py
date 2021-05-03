@@ -7,13 +7,15 @@ from tqdm import tqdm
 #exp_name = 'results_test_mask_char'
 #exp_dataset = 'mask_2_oov_test_set.db'
 #exp_name = 'results_test_mask_2'
+exp_dataset = 'mask_2_oov_test_set.db'
+exp_name = 'results_test_synonyms_mask_2_ensemble_all_5'
 
 #exp_dataset = 'synonyms_mask_char_l03_oov_test_set.db'
 #exp_name = 'results_test_synonyms_mask_char_l03'
 #exp_dataset = 'synonyms_mask_char_03m_oov_test_set.db'
 #exp_name = 'results_test_synonyms_mask_char_03m'
-exp_dataset = 'synonyms_mask_2_03l_oov_test_set.db'
-exp_name = 'results_test_synonyms_mask_2_03l'
+#exp_dataset = 'synonyms_mask_2_03l_oov_test_set.db'
+#exp_name = 'results_test_synonyms_mask_2_03l'
 
 q_list_file = '/scratch/cluster/billyang/vqa_dataset/txt_db/oov_datasets/{}/questions_changed.json'.format(exp_dataset)
 exp_ans_file = '/scratch/cluster/billyang/uniter_image/vqa_joint_trained/{}/results_3000_all.json'.format(exp_name)

@@ -72,7 +72,7 @@ def main(opts):
                                  collate_fn=vqa_eval_collate)
     eval_dataloader = PrefetchLoader(eval_dataloader)
 
-    val_log, results, logits = inf_mlm(model, eval_dataloader, len(eval_dataset), label2ans, opts.save_logits, predict_p=opts.predict_p)
+    val_log, results, logits = inf_mlm(model, eval_dataloader, len(eval_dataset), label2ans, opts.save_logits, predict_p=opts.predict_p, ensemble=opts.ensemble)
     for k, v in val_log.items():
         print(f'{k} {v}')
     result_dir = f'{opts.output_dir}/results_test_{opts.test_name}'
@@ -93,7 +93,7 @@ def main(opts):
                      **all_logits)
 
 @torch.no_grad()
-def inf_mlm(model, eval_loader, eval_len, label2ans, save_logits=False, task='mlm', predict_p=0):
+def inf_mlm(model, eval_loader, eval_len, label2ans, save_logits=False, task='mlm', predict_p=0, ensemble=1):
     LOGGER.info("start running evaluation {}...".format(task))
     model.eval()
     n_ex = 0
@@ -123,6 +123,9 @@ def inf_mlm(model, eval_loader, eval_len, label2ans, save_logits=False, task='ml
             else: 
                 masked_toks = scores.max(dim=-1, keepdim=False
                                                )[1].cpu().tolist()
+                if ensemble > 1:
+                    masked_toks = torch.topk(scores, ensemble, dim=-1 
+                                                   )[1].cpu().tolist()
             masked_toks = iter(masked_toks)
         for qid, q_toks in zip(qids, batch['input_ids']):
             predicted_toks = []
