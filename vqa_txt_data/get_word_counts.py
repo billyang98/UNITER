@@ -14,6 +14,7 @@ QUESTION_MARK= "@@?"
 
 word2count = {}
 num_words_changed = {}
+tokens_count = {}
 
 def is_int(s):
     try: 
@@ -70,6 +71,12 @@ def replace_token_using_synonyms(word, tok, synonyms_iter, still_mask, mask_low_
         new_tokens += [MASK]
         replaced_token = True
         add_word2count(word)
+    if replaced_token:
+        token_count = len(tok.tokenize(word))
+        if token_count not in tokens_count:
+            tokens_count[token_count] = 1
+        else:
+            tokens_count[token_count] += 1
     return new_tokens, replaced_token
 
 
@@ -198,6 +205,7 @@ def remask(f_name, vocab_loc='vqa_words_not_in_bert.txt', strategy='all', synony
     print("committing changes")
     json.dump(word2count, open(f'{strategy}_word2count.json', 'w'))
     json.dump(num_words_changed, open(f'{strategy}_num_words_changed.json', 'w'))
+    json.dump(tokens_count, open(f'{strategy}_tokens_count.json', 'w'))
 
 
 if __name__ == '__main__':
