@@ -12,11 +12,15 @@ from tqdm import tqdm
 #exp_name = 'results_test_synonyms_mask_char_l03'
 #exp_dataset = 'synonyms_mask_char_04_oov_test_set.db'
 #exp_name = 'results_test_synonyms_mask_char_04'
-exp_dataset = 'synonyms_mask_2_04_oov_test_set.db'
-exp_name = 'results_test_synonyms_mask_2_04'
+#exp_dataset = 'synonyms_mask_2_04_oov_test_set.db'
+#exp_name = 'results_test_synonyms_mask_2_04'
+exp_dataset = 'mask_2_oov_test_set.db'
+exp_name = 'results_test_synonyms_mask_2'
 
-mexp_dataset = 'synonyms_mask_2_04m_oov_test_set.db'
-mexp_name = 'results_test_synonyms_mask_2_04m'
+#mexp_dataset = 'synonyms_mask_2_04m_oov_test_set.db'
+#mexp_name = 'results_test_synonyms_mask_2_04m'
+mexp_dataset = 'synonyms_mask_2_oov_test_set.db'
+mexp_name = 'results_test_synonyms_mask_2_ensemble_all'
 
 q_list_file = '/scratch/cluster/billyang/vqa_dataset/txt_db/oov_datasets/{}/questions_changed.json'.format(exp_dataset)
 exp_ans_file = '/scratch/cluster/billyang/uniter_image/vqa_joint_trained/{}/results_3000_all.json'.format(exp_name)
