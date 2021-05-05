@@ -24,7 +24,7 @@ from tqdm import tqdm
 from data import (TokenBucketSampler, PrefetchLoader,
                   TxtTokLmdb, ImageLmdbGroup, ConcatDatasetWithLens,
                   VqaDataset, VqaEvalDataset,
-                  vqa_collate, vqa_eval_collate,
+                  vqa_collate, vqa_eval_collate, get_vqa_collate,
                   MlmDataset, mlm_collate)
 from model.vqa import UniterForVisualQuestionAnswering
 from optim import AdamW, get_lr_sched
@@ -120,9 +120,12 @@ def main(opts):
         for txt_path, img_path in zip(opts.train_txt_dbs, opts.train_img_dbs):
             img_db = all_img_dbs[img_path]
             txt_db = TxtTokLmdb(txt_path, opts.max_txt_len)
-            train_datasets.append(VqaDataset(len(ans2label), txt_db, img_db))
+            tmp_dataset = VqaDataset(len(ans2label), txt_db, img_db)
+            if opts.text_only:
+                tmp_dataset.set_text_only()
+            train_datasets.append(tmp_dataset)
         train_dataset = ConcatDatasetWithLens(train_datasets)
-        train_dataloader = build_dataloader(train_dataset, vqa_collate, True, opts)
+        train_dataloader = build_dataloader(train_dataset, get_vqa_collate(opts.text_only), True, opts)
         # val
         LOGGER.info(f"Loading Val Dataset {opts.val_txt_db}, {opts.val_img_db}")
         val_img_db = all_img_dbs[opts.val_img_db]
@@ -220,7 +223,7 @@ def main(opts):
                 task = 'vqa' if step // opts.gradient_accumulation_steps % 2 == 0 else 'mlm'
             else: 
                 task = opts.task
-            loss = model(batch, compute_loss=True, task=task)
+            loss = model(batch, compute_loss=True, task=task, text_only=opts.text_only)
             if task == 'vqa':
                 loss = loss.mean() * batch['targets'].size(1)  # instance-leval bce
             if task == 'mlm':

@@ -31,5 +31,6 @@
     "fp16": true,
     "n_workers": 4,
     "pin_mem": true,
+    "text_only": true,
     "task": "mlm"
 }

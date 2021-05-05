@@ -64,6 +64,10 @@ class VqaDataset(DetectFeatTxtTokDataset):
     def __init__(self, num_answers, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.num_answers = num_answers
+        self.text_only = False
+
+    def set_text_only(self):
+        self.text_only = True
 
     def __getitem__(self, i):
         example = super().__getitem__(i)
@@ -79,6 +83,8 @@ class VqaDataset(DetectFeatTxtTokDataset):
 
         target = _get_vqa_target(example, self.num_answers)
 
+        if self.text_only:
+            num_bb = 0
         attn_masks = torch.ones(len(input_ids) + num_bb, dtype=torch.long)
 
         return input_ids, img_feat, img_pos_feat, attn_masks, target, masked_input_ids, masked_txt_labels
@@ -93,8 +99,12 @@ class VqaDataset(DetectFeatTxtTokDataset):
         txt_labels = torch.tensor([-1] + txt_labels + [-1])
         return input_ids, txt_labels
 
+def get_vqa_collate(text_only=False):
+    def vqa_collate_lambda(inputs):
+        return vqa_collate(inputs, text_only=text_only)
+    return vqa_collate_lambda
 
-def vqa_collate(inputs):
+def vqa_collate(inputs, text_only=False):
     (input_ids, img_feats, img_pos_feats, attn_masks, targets,
      masked_input_ids, masked_txt_labels) = map(list, unzip(inputs))
 
@@ -108,9 +118,15 @@ def vqa_collate(inputs):
     attn_masks = pad_sequence(attn_masks, batch_first=True, padding_value=0)
     targets = torch.stack(targets, dim=0)
 
+
     num_bbs = [f.size(0) for f in img_feats]
     img_feat = pad_tensors(img_feats, num_bbs)
     img_pos_feat = pad_tensors(img_pos_feats, num_bbs)
+
+    if text_only:
+        num_bbs = [0 for f in img_feats]
+        img_feat = None
+        img_pos_feat = None
 
     bs, max_tl = input_ids.size()
     out_size = attn_masks.size(1)

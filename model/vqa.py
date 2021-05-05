@@ -40,6 +40,8 @@ class UniterForVisualQuestionAnswering(UniterPreTrainedModel):
         img_pos_feat = batch['img_pos_feat']
         attn_masks = batch['attn_masks']
         gather_index = batch['gather_index']
+        if text_only:
+            img_feat = None 
         if task == 'vqa':
             sequence_output = self.uniter(input_ids, position_ids,
                                           img_feat, img_pos_feat,
@@ -58,8 +60,6 @@ class UniterForVisualQuestionAnswering(UniterPreTrainedModel):
         elif task == 'mlm':
             txt_labels = batch['masked_txt_labels']
             input_ids = batch['masked_input_ids']
-            if text_only:
-                img_feat = None 
             sequence_output = self.uniter(input_ids, position_ids,
                                           img_feat, img_pos_feat,
                                           attn_masks, gather_index,
