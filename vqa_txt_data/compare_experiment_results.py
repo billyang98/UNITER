@@ -7,8 +7,8 @@ from tqdm import tqdm
 #exp_name = 'results_test_mask_char'
 #exp_dataset = 'mask_2_oov_test_set.db'
 #exp_name = 'results_test_mask_2'
-exp_dataset = 'mask_2_oov_test_set.db'
-exp_name = 'results_test_synonyms_mask_2_ensemble_all_5'
+#exp_dataset = 'mask_2_oov_test_set.db'
+#exp_name = 'results_test_synonyms_mask_2_ensemble_all_5'
 
 #exp_dataset = 'synonyms_mask_char_l03_oov_test_set.db'
 #exp_name = 'results_test_synonyms_mask_char_l03'
@@ -17,13 +17,19 @@ exp_name = 'results_test_synonyms_mask_2_ensemble_all_5'
 #exp_dataset = 'synonyms_mask_2_03l_oov_test_set.db'
 #exp_name = 'results_test_synonyms_mask_2_03l'
 
+exp_dataset = 'mask_2_oov_test_set.db'
+exp_name = 'results_test_synonyms_mask_2_fixed'
+
+
 q_list_file = '/scratch/cluster/billyang/vqa_dataset/txt_db/oov_datasets/{}/questions_changed.json'.format(exp_dataset)
 exp_ans_file = '/scratch/cluster/billyang/uniter_image/vqa_joint_trained/{}/results_3000_all.json'.format(exp_name)
+#exp_ans_file = '/scratch/cluster/billyang/uniter_image/vqa_joint_fixed_trained/{}/results_3000_all.json'.format(exp_name)
 
 q_list = json.load(open(q_list_file))
 
 exp_ans_list = json.load(open(exp_ans_file))
 baseline_ans_list = json.load(open('/scratch/cluster/billyang/uniter_image/vqa_joint_trained/results_test_normal_test/results_3000_all.json'))
+#baseline_ans_list = json.load(open('/scratch/cluster/billyang/uniter_image/vqa_joint_fixed_trained/results_test_normal_test_fixed/results_3000_all.json'))
 exp_ans = {o['question_id']: o['answer'] for o in exp_ans_list}
 baseline_ans = {o['question_id']: o['answer'] for o in baseline_ans_list}
 

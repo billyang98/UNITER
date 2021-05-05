@@ -1,0 +1,17 @@
+{
+    "txt_db": "/vqa_dataset/txt_db/oov_datasets/mask_2_oov_test_set.db",
+    "img_db": "/vqa_dataset/img_db/oov_datasets/oov_test_set",
+    "output_dir": "/vqa_joint_fixed_trained",
+    "model_config": "config/uniter-base.json",
+    "checkpoint": "3000",
+    "max_txt_len": 60,
+    "batch_size": 10240,
+    "fp16": true,
+    "n_workers": 4,
+    "pin_mem": true,
+    "save_logits": false,
+    "task": "mlm",
+    "predict_p": 0,
+    "ensemble": 0,
+    "test_name": "synonyms_mask_2_fixed"
+}

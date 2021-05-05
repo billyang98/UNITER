@@ -31,7 +31,7 @@ class UniterForVisualQuestionAnswering(UniterPreTrainedModel):
         self.cls = BertOnlyMLMHead(
             config, self.uniter.embeddings.word_embeddings.weight)
 
-    def forward(self, batch, compute_loss=True, task='vqa'):
+    def forward(self, batch, compute_loss=True, task='vqa', text_only=False):
         assert task == 'vqa' or task =='mlm', "Invalid task {}".format(task)
         batch = defaultdict(lambda: None, batch)
         input_ids = batch['input_ids']
@@ -40,11 +40,11 @@ class UniterForVisualQuestionAnswering(UniterPreTrainedModel):
         img_pos_feat = batch['img_pos_feat']
         attn_masks = batch['attn_masks']
         gather_index = batch['gather_index']
-        sequence_output = self.uniter(input_ids, position_ids,
-                                      img_feat, img_pos_feat,
-                                      attn_masks, gather_index,
-                                      output_all_encoded_layers=False)
         if task == 'vqa':
+            sequence_output = self.uniter(input_ids, position_ids,
+                                          img_feat, img_pos_feat,
+                                          attn_masks, gather_index,
+                                          output_all_encoded_layers=False)
             pooled_output = self.uniter.pooler(sequence_output)
             answer_scores = self.vqa_output(pooled_output)
 
@@ -58,6 +58,12 @@ class UniterForVisualQuestionAnswering(UniterPreTrainedModel):
         elif task == 'mlm':
             txt_labels = batch['masked_txt_labels']
             input_ids = batch['masked_input_ids']
+            if text_only:
+                img_feat = None 
+            sequence_output = self.uniter(input_ids, position_ids,
+                                          img_feat, img_pos_feat,
+                                          attn_masks, gather_index,
+                                          output_all_encoded_layers=False)
             # get only the text part
             sequence_output = sequence_output[:, :input_ids.size(1), :]
             # only compute masked tokens for better efficiency

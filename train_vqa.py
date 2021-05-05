@@ -115,7 +115,7 @@ def main(opts):
 			f'/utils/ans2label.json'))
     label2ans = {label: ans for ans, label in ans2label.items()}
     train_datasets = []
-    if opts.task == 'vqa' or opts.task == 'joint':
+    if opts.task == 'vqa' or opts.task == 'joint' or opts.task == 'mlm':
         LOGGER.info("Loading VQA Datasets")
         for txt_path, img_path in zip(opts.train_txt_dbs, opts.train_img_dbs):
             img_db = all_img_dbs[img_path]
@@ -215,8 +215,11 @@ def main(opts):
     while True:
         for step, batch in enumerate(train_dataloader):
             n_examples += batch['input_ids'].size(0)
-            # do one task for opts.gradient_accumulation_steps then switch
-            task = 'vqa' if step // opts.gradient_accumulation_steps % 2 == 0 else 'mlm'
+            if opts.task == "joint":
+                # do one task for opts.gradient_accumulation_steps then switch
+                task = 'vqa' if step // opts.gradient_accumulation_steps % 2 == 0 else 'mlm'
+            else: 
+                task = opts.task
             loss = model(batch, compute_loss=True, task=task)
             if task == 'vqa':
                 loss = loss.mean() * batch['targets'].size(1)  # instance-leval bce
