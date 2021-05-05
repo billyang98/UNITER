@@ -6,6 +6,7 @@ import msgpack
 from lz4.frame import compress, decompress
 from tqdm import tqdm
 from replace_masks import get_synonyms_dict
+import re
 
 MASK = "[MASK]"
 MASK_ID = 103
@@ -15,6 +16,7 @@ QUESTION_MARK= "@@?"
 word2count = {}
 num_words_changed = {}
 tokens_count = {}
+tokenization_types = {'numeric': 0, 'apostrophe': 0, 'punctuation': 0, 'character': 0, 'other': 0, "znumeric_list": set(), "zapostrophe_list": set(), 'zpunctuation_list': set(), 'zcharacter_list': set(), 'zother_list': set()}
 
 def is_int(s):
     try: 
@@ -72,11 +74,27 @@ def replace_token_using_synonyms(word, tok, synonyms_iter, still_mask, mask_low_
         replaced_token = True
         add_word2count(word)
     if replaced_token:
-        token_count = len(tok.tokenize(word))
+        tokenized_word = tok.tokenize(word)
+        token_count = len(tokenized_word)
         if token_count not in tokens_count:
             tokens_count[token_count] = 1
         else:
             tokens_count[token_count] += 1
+        if any(char.isdigit() for char in word):
+            tokenization_types['numeric'] += 1
+            tokenization_types['znumeric_list'].add(word)
+        elif "'" in word:
+            tokenization_types['apostrophe'] += 1
+            tokenization_types['zapostrophe_list'].add(word)
+        elif not word.isalnum():
+            tokenization_types['punctuation'] += 1
+            tokenization_types['zpunctuation_list'].add(word)
+        elif len(tokenized_word) == len(word) and len(word) > 1:
+            tokenization_types['character'] += 1
+            tokenization_types['zcharacter_list'].add(word)
+        else:
+            tokenization_types['other'] += 1
+            tokenization_types['zother_list'].add(word)
     return new_tokens, replaced_token
 
 
@@ -206,6 +224,13 @@ def remask(f_name, vocab_loc='vqa_words_not_in_bert.txt', strategy='all', synony
     json.dump(word2count, open(f'{strategy}_word2count.json', 'w'))
     json.dump(num_words_changed, open(f'{strategy}_num_words_changed.json', 'w'))
     json.dump(tokens_count, open(f'{strategy}_tokens_count.json', 'w'))
+    tt = {}
+    for key, value in tokenization_types.items():
+        if isinstance(value, int):
+            tt[key] = value
+        else:
+            tt[key] = list(value)
+    json.dump(tt, open(f'{strategy}_tokenization_types.json', 'w'))
 
 
 if __name__ == '__main__':
