@@ -3,7 +3,7 @@
     "img_db": "/vqa_dataset/img_db/oov_datasets/oov_test_set",
     "output_dir": "/vqa_text_trained",
     "model_config": "config/uniter-base.json",
-    "checkpoint": "3000",
+    "checkpoint": "0",
     "max_txt_len": 60,
     "batch_size": 10240,
     "fp16": true,
@@ -13,6 +13,5 @@
     "task": "mlm",
     "predict_p": 0,
     "ensemble": 0,
-    "text_only": true,
-    "test_name": "synonyms_mask_2_text"
+    "test_name": "synonyms_mask_2_text_base"
 }

@@ -171,6 +171,8 @@ class VqaEvalDataset(VqaDataset):
         else:
             target = None
 
+        if self.text_only:
+            num_bb = 0
         attn_masks = torch.ones(len(input_ids) + num_bb, dtype=torch.long)
 
         return qid, input_ids, img_feat, img_pos_feat, attn_masks, target, masked_input_ids, masked_txt_labels
@@ -201,7 +203,12 @@ class VqaEvalDataset(VqaDataset):
 
         return tokens, output_label
 
-def vqa_eval_collate(inputs):
+def get_vqa_eval_collate(text_only=False):
+    def vqa_eval_collate_lambda(inputs):
+        return vqa_eval_collate(inputs, text_only=text_only)
+    return vqa_eval_collate_lambda
+
+def vqa_eval_collate(inputs, text_only=False):
     (qids, input_ids, img_feats, img_pos_feats, attn_masks, targets,
      masked_input_ids, masked_txt_labels) = map(list, unzip(inputs))
 
@@ -223,6 +230,11 @@ def vqa_eval_collate(inputs):
     num_bbs = [f.size(0) for f in img_feats]
     img_feat = pad_tensors(img_feats, num_bbs)
     img_pos_feat = pad_tensors(img_pos_feats, num_bbs)
+    
+    if text_only:
+        num_bbs = [0 for f in img_feats]
+        img_feat = None
+        img_pos_feat = None
 
     bs, max_tl = input_ids.size()
     out_size = attn_masks.size(1)

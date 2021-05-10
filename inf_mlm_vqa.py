@@ -14,7 +14,8 @@ from cytoolz import concat
 from tqdm import tqdm
 
 from data import (TokenBucketSampler, PrefetchLoader,
-                  DetectFeatLmdb, TxtTokLmdb, VqaEvalDataset, vqa_eval_collate)
+                  DetectFeatLmdb, TxtTokLmdb, VqaEvalDataset, vqa_eval_collate,
+                  get_vqa_eval_collate)
 from model.vqa import UniterForVisualQuestionAnswering
 
 from utils.logger import LOGGER
@@ -48,6 +49,8 @@ def main(opts):
                                  False)
     eval_txt_db = TxtTokLmdb(opts.txt_db, -1)
     eval_dataset = VqaEvalDataset(len(ans2label), eval_txt_db, eval_img_db)
+    if opts.text_only:
+        eval_dataset.set_text_only()
     eval_dataset.set_is_mlm_inference()
 
     # Prepare model
@@ -69,10 +72,10 @@ def main(opts):
                                  batch_sampler=sampler,
                                  num_workers=opts.n_workers,
                                  pin_memory=opts.pin_mem,
-                                 collate_fn=vqa_eval_collate)
+                                 collate_fn=get_vqa_eval_collate(opts.text_only))
     eval_dataloader = PrefetchLoader(eval_dataloader)
 
-    val_log, results, logits = inf_mlm(model, eval_dataloader, len(eval_dataset), label2ans, opts.save_logits, predict_p=opts.predict_p, ensemble=opts.ensemble)
+    val_log, results, logits = inf_mlm(model, eval_dataloader, len(eval_dataset), label2ans, opts.save_logits, predict_p=opts.predict_p, ensemble=opts.ensemble, text_only=opts.text_only)
     for k, v in val_log.items():
         print(f'{k} {v}')
     result_dir = f'{opts.output_dir}/results_test_{opts.test_name}'
@@ -93,7 +96,7 @@ def main(opts):
                      **all_logits)
 
 @torch.no_grad()
-def inf_mlm(model, eval_loader, eval_len, label2ans, save_logits=False, task='mlm', predict_p=0, ensemble=1):
+def inf_mlm(model, eval_loader, eval_len, label2ans, save_logits=False, task='mlm', predict_p=0, ensemble=1, text_only=False):
     LOGGER.info("start running evaluation {}...".format(task))
     model.eval()
     n_ex = 0
@@ -104,7 +107,7 @@ def inf_mlm(model, eval_loader, eval_len, label2ans, save_logits=False, task='ml
     for i, batch in enumerate(eval_loader):
         qids = batch['qids']
 
-        scores = model(batch, compute_loss=False, task=task)
+        scores = model(batch, compute_loss=False, task=task, text_only=text_only)
         if scores.nelement() == 0:
             masked_toks = iter([])
         else:
