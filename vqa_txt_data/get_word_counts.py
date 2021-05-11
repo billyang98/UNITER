@@ -98,7 +98,7 @@ def replace_token_using_synonyms(word, tok, synonyms_iter, still_mask, mask_low_
     return new_tokens, replaced_token
 
 
-def remask(f_name, vocab_loc='vqa_words_not_in_bert.txt', strategy='all', synonyms_dict=None, mask_low_prob=False, still_mask=False):
+def remask(f_name, vocab_loc='vqa_words_not_in_bert.txt', strategy='all', synonyms_dict=None, mask_low_prob=False, still_mask=False, questions_list=None, list_name=None):
     with open(vocab_loc, 'r') as f:
         words = json.load(f)
     tok = BertTokenizer.from_pretrained('bert-base-cased')
@@ -210,6 +210,9 @@ def remask(f_name, vocab_loc='vqa_words_not_in_bert.txt', strategy='all', synony
 
     for key, value in tqdm(cursor):
         q_id = key.decode()
+        if questions_list is not None:
+            if not q_id in questions_list:
+                continue
         q = msgpack.loads(decompress(value))
         original_query_text = q['question']
         query_text = original_query_text
@@ -221,27 +224,36 @@ def remask(f_name, vocab_loc='vqa_words_not_in_bert.txt', strategy='all', synony
         query_tokens, query_ids, did_mask = mask_fn(query_words, q_id)
 
     print("committing changes")
-    json.dump(word2count, open(f'{strategy}_word2count.json', 'w'))
-    json.dump(num_words_changed, open(f'{strategy}_num_words_changed.json', 'w'))
-    json.dump(tokens_count, open(f'{strategy}_tokens_count.json', 'w'))
+    json.dump(word2count, open(f'{strategy}_04_{list_name}_word2count.json', 'w'))
+    json.dump(num_words_changed, open(f'{strategy}_04_{list_name}_num_words_changed.json', 'w'))
+    json.dump(tokens_count, open(f'{strategy}_04_{list_name}_tokens_count.json', 'w'))
     tt = {}
     for key, value in tokenization_types.items():
         if isinstance(value, int):
             tt[key] = value
         else:
             tt[key] = list(value)
-    json.dump(tt, open(f'{strategy}_tokenization_types.json', 'w'))
+    json.dump(tt, open(f'{strategy}{list_name}_tokenization_types.json', 'w'))
 
 
 if __name__ == '__main__':
     synonyms_dict = None
     mask_low_prob = False
     still_mask = False
+    questions_list = None
     if len(sys.argv) > 3:
         synonyms_dict = get_synonyms_dict(sys.argv[3])
-    if len(sys.argv) > 5:
-        mask_low_prob = True
     if len(sys.argv) > 4:
-        still_mask = True
+        exp_comp = json.load(open(sys.argv[4]))
+        rtw_list = set(exp_comp['rtw'])
+        wtr_list = set(exp_comp['wtr'])
+        remask(sys.argv[1], strategy=sys.argv[2], synonyms_dict=synonyms_dict,questions_list=rtw_list,list_name='rtw')
+        remask(sys.argv[1], strategy=sys.argv[2], synonyms_dict=synonyms_dict,questions_list=wtr_list,list_name='wtr')
+        pass
+#    if len(sys.argv) > 5:
+#        mask_low_prob = True
+#    if len(sys.argv) > 4:
+#        still_mask = True
 
-    remask(sys.argv[1], strategy=sys.argv[2], synonyms_dict=synonyms_dict, mask_low_prob=mask_low_prob, still_mask=still_mask)
+    remask(sys.argv[1], strategy=sys.argv[2], synonyms_dict=synonyms_dict,questions_list=questions_list)
+#    remask(sys.argv[1], strategy=sys.argv[2], synonyms_dict=synonyms_dict, mask_low_prob=mask_low_prob, still_mask=still_mask)
